@@ -98,8 +98,6 @@ let App = React.createClass({
         }),
       });
 
-      console.log(chord, fingerings.get(0).toJS());
-
       return <ChordCard
         chord={chord}
         fingerings={fingerings.get(0)}
