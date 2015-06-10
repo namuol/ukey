@@ -65,7 +65,7 @@ let LABEL = Style.registerStyle({
   margin: '2vmin',
   fontSize: '2.8vmin',
   fontWeight: 600,
-  color: '#446',
+  color: theme.labelColor,
 });
 
 let CHORD_OUTPUT = Style.registerStyle({
@@ -101,6 +101,7 @@ let App = React.createClass({
       console.log(chord, fingerings.get(0).toJS());
 
       return <ChordCard
+        chord={chord}
         fingerings={fingerings.get(0)}
       />;
     });
