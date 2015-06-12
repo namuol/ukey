@@ -10,12 +10,14 @@ import qs from 'qs';
 import createFretboard from './createFretboard';
 import getFingeringsFromChord from './getFingeringsFromChord';
 
+import ReactGridLayout from 'react-grid-layout';
+
 import ChordCard from './ChordCard';
 
 let WRAPPER = Style.registerStyle({
   width: '100vmin',
   minHeight: '100vh',
-  padding: '0vmin',
+  padding: `${theme.mainPadding}vmin`,
   margin: 'auto',
   backgroundColor: theme.bgColor,
 });
@@ -46,24 +48,25 @@ let CHORD_INPUT = Style.registerStyle({
   alignItems: 'center',
   alignContent: 'center',
   width: '100%',
-  padding: '2vmin',
+  marginBottom: '1vmin',
 });
 
 let TEXT_INPUT = Style.registerStyle({
   fontFamily: theme.fontFamily,
-  fontSize: '3vmin',
+  fontSize: '5vmin',
   border: 'none',
   outline: 'none',
   borderRadius: '1vmin',
-  padding: '0.5vmin 1vmin',
-  width: '25em',
+  padding: '1.5vmin 2vmin',
+  width: '100%',
   fontWeight: 700,
   textAlign: 'center',
 });
 
 let LABEL = Style.registerStyle({
-  margin: '2vmin',
-  fontSize: '2.8vmin',
+  margin: 0,
+  marginBottom: '2vmin',
+  fontSize: '5vmin',
   fontWeight: 600,
   color: theme.labelColor,
 });
@@ -71,14 +74,22 @@ let LABEL = Style.registerStyle({
 let CHORD_OUTPUT = Style.registerStyle({
   display: 'flex',
   justifyContent: 'center',
+  alignContent: 'center',
+  alignItems: 'center',
   width: '100%',
   flexWrap: 'wrap',
+});
+
+let fretboard = createFretboard({
+  tuning: ['G', 'C', 'E', 'A'],
+  fretCount: 5,
 });
 
 let App = React.createClass({
   getDefaultProps: function () {
     return {
-      chordsText: 'C G Am F',
+      chordsText: 'C G Am F F F',
+      transpose: 0,
     };
   },
   
@@ -87,34 +98,27 @@ let App = React.createClass({
   },
 
   render: function () {
-    let chordCards = this.state.chordsText.split(/\s/).filter(c => c.length).map((chord) => {
-
-      let fingerings = getFingeringsFromChord({
-        chord: chord,
-        fretboard: createFretboard({
-          tuning: ['G','C','E','A'],
-          fretCount: 5,
-          fretWindow: 5,
-        }),
-      });
-
+    let chordCards = this.state.chordsText.split(/\s/).filter(c => c.length).map((chord, idx) => {
       return <ChordCard
+        key={idx}
         chord={chord}
-        fingerings={fingerings.get(0)}
+        fretboard={fretboard}
+        transpose={parseInt(this.state.transpose)}
+        _grid={{
+          w: 1,
+          h: 1,
+          x: idx % 6,
+          y: Math.floor(idx / 6),
+        }}
       />;
     });
 
     return (
       <div className={WRAPPER.className}>
-
         <div className={STYLE.className}>
           <div className={CHORD_INPUT.className}>
-            
-            <h2 className={LABEL.className}>
-              Enter any sequence of chords, seperated by spaces:
-            </h2>
-            
             <input className={TEXT_INPUT.className}
+              type="text"
               value={this.state.chordsText}
               spellCheck={false}
               onChange={(e) => {
@@ -123,7 +127,6 @@ let App = React.createClass({
                 });
               }}
             />
-
           </div>
 
           <div className={CHORD_OUTPUT.className}>

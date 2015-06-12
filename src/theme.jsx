@@ -1,6 +1,7 @@
 export default {
   color: 'black',
-  bgColor: '#eee',
+  bgColor: '#ddf',
   fontFamily: 'Quicksand, sans-serif',
-  labelColor: '#446',
+  labelColor: '#88a',
+  mainPadding: 4,
 };

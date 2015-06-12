@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
 
   <link href='http://fonts.googleapis.com/css?family=Quicksand:300,400,700' rel='stylesheet' type='text/css'>
-  <title>ooky - explore ukulele chords</title>
+  <title>ukey - Ukulele Chord Explorer</title>
   <style>
     html, body {
       height: 100%;
@@ -26,14 +26,24 @@
       user-select: none;
     }
 
+    input {
+      -ms-user-select: initial;
+      -moz-user-select: initial;
+      -webkit-user-select: initial;
+      user-select: initial;
+    }
+
     #main {
       width: 100%;
-      height: 100%;
+      min-height: 100%;
+      display: -webkit-flex;
       display: flex;
+      -webkit-justify-content: center;
       justify-content: center;
+      -webkit-align-items: center;
       align-items: center;
       font-family: Quicksand, sans-serif;
-      font-size: 6vmin;
+      font-size: 10vmin;
     }
 
   </style>

@@ -44,10 +44,10 @@ runTests({
   tests: uniqueCombos_tests,
 });
 
-function getFingeringsFromChord ({chord, fretboard, fretWindow}) {
+function getFingeringsFromChord ({chord, fretboard, fretWindow, transpose=0}) {
   // First, get a list of the unique chroma in our chord.
   // Eg. chord('A') => [9, 0, 4]
-  let chromas = Immutable.OrderedSet(teoria.chord(chord).notes().map((n) => {return n.chroma();}));
+  let chromas = Immutable.OrderedSet(teoria.chord(chord).notes().map((n) => {return (n.chroma() + transpose) % 12;}));
 
   // Now, build a list of all finger positions that match
   //  notes in this chord:

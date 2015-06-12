@@ -2,17 +2,19 @@ import equal from 'deep-equal';
 import pretty from './pretty';
 
 export default function runTests ({funcName, func, tests}) {
+  console.info('Running tests for', funcName);
+
   let errorMsgs = [];
 
-  tests.forEach(({input, expected}) => {
+  tests.forEach(({input, expected}, testNum) => {
     let result = func(input);
     
-    if (typeof result.toJS === 'function') {
+    if (!!result && typeof result.toJS === 'function') {
       result = result.toJS();
     }
 
     if (!equal(result, expected)) {
-      errorMsgs.push(`${funcName}(${pretty(input)}):\nExpected ${pretty(expected)}\nbut got ${pretty(result)}`);
+      errorMsgs.push(`${funcName} test #${testNum}:\nExpected ${pretty(expected)}\nbut got ${pretty(result)}`);
     }
   });
 

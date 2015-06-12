@@ -13,19 +13,33 @@ window.teoria = teoria;
 import createFretboard from './createFretboard';
 import getFingeringsFromChord from './getFingeringsFromChord';
 
-console.log(getFingeringsFromChord({
-  chord: 'B#',
-  fretboard: createFretboard({
-    tuning: ['G','C','E','A'],
-    fretCount: 5,
-  }),
-  fretWindow: 5,
-}).toJS());
+import Style from './Style';
+
+// console.log(getFingeringsFromChord({
+//   chord: 'B#',
+//   fretboard: createFretboard({
+//     tuning: ['G','C','E','A'],
+//     fretCount: 5,
+//   }),
+//   fretWindow: 5,
+// }).toJS());
+
+import TestGrid from './TestGrid';
 
 window.addEventListener('load', () => {
-  page('*', (ctx, next) => {
+  page('/', (ctx, next) => {
     React.render(
       <App />
+    , document.getElementById('main'));
+  });
+
+  page('/testgrid', (ctx, next) => {
+    let GRID = Style.registerStyle({
+      width: '100%',
+    });
+
+    React.render(
+      <TestGrid />
     , document.getElementById('main'));
   });
 
