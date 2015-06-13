@@ -14,6 +14,10 @@ import createFretboard from './createFretboard';
 import getFingeringsFromChord from './getFingeringsFromChord';
 
 import Style from './Style';
+Style.inject();
+
+
+import Container from './Container';
 
 // console.log(getFingeringsFromChord({
 //   chord: 'B#',
@@ -40,6 +44,16 @@ window.addEventListener('load', () => {
 
     React.render(
       <TestGrid />
+    , document.getElementById('main'));
+  });
+
+  page('/dustbin', (ctx, next) => {
+    let GRID = Style.registerStyle({
+      width: '100%',
+    });
+
+    React.render(
+      <Container />
     , document.getElementById('main'));
   });
 

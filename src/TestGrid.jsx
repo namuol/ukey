@@ -7,22 +7,25 @@ import DraggableGrid from './DraggableGrid';
 
 import Immutable from 'immutable';
 
-let WRAPPER = Style.registerStyle({
+import HTML5Backend from 'react-dnd/modules/backends/HTML5';
+import {DragDropContext, DragSource, DropTarget} from 'react-dnd';
+
+const WRAPPER = Style.registerStyle({
   width: '100vmin',
   minHeight: '100vh',
   backgroundColor: theme.bgColor,
 });
 
-let STYLE = Style.registerStyle({
+const STYLE = Style.registerStyle({
   width: '100%',
   height: '100%',
 });
 
-let GRID = Style.registerStyle({
+const GRID = Style.registerStyle({
   width: '100%',
 });
 
-let ITEM = Style.registerStyle({
+const ITEM = Style.registerStyle({
   width: '100%',
   height: '100%',
   textAlign: 'center',
@@ -34,9 +37,9 @@ let ITEM = Style.registerStyle({
   fontSize: '4vmin',
 });
 
-let TestGrid = React.createClass({
-  render: function () {
-    let items = Immutable.Range(0,16).map((n) => {
+class TestGrid extends React.Component {
+  render () {
+    const items = Immutable.Range(0,7).map((n) => {
       return <div className={ITEM.className} key={n}>
         {n}
       </div>;
@@ -54,6 +57,6 @@ let TestGrid = React.createClass({
         </div>
     );
   }
-});
+};
 
 export default Style.component(TestGrid);

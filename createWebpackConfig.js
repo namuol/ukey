@@ -55,7 +55,7 @@ module.exports = function createWebpackConfig (params) {
       new webpack.NoErrorsPlugin()
     ],
     debug: !prod,
-    devtool: prod ? 'source-map' : 'eval-source-map',
+    devtool: prod ? 'source-map' : 'eval',
     resolve: {
       extensions: ['', '.js', '.jsx'],
       fallback: path.join(__dirname, "node_modules"),
