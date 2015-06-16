@@ -10,8 +10,17 @@ function collect (connect, monitor) {
 
 const itemSource = {
   beginDrag (props) {
-    console.log('beginDrag', props);
-    return {};
+    if (typeof props.onBeginDrag === 'function') {
+      props.onBeginDrag(...arguments);
+    }
+
+    return props;
+  },
+
+  endDrag (props) {
+    if (typeof props.onEndDrag === 'function') {
+      props.onEndDrag(...arguments);
+    }
   }
 };
 
@@ -33,7 +42,8 @@ export default class DraggableItem extends React.Component {
         style={Object.assign({}, {
           cursor: 'move',
           overflow: 'visible',
-          display: isDragging ? 'none' : 'initial',
+          opacity: isDragging ? 0.5 : 1,
+          // display: isDragging ? 'none' : 'initial',
         }, this.props.style)}
       >
         {this.props.children}

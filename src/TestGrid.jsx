@@ -2,13 +2,9 @@ import React from 'react';
 import Style from './Style';
 import theme from './theme';
 
-import ReactGridLayout from 'react-grid-layout';
 import DraggableGrid from './DraggableGrid';
 
 import Immutable from 'immutable';
-
-import HTML5Backend from 'react-dnd/modules/backends/HTML5';
-import {DragDropContext, DragSource, DropTarget} from 'react-dnd';
 
 const WRAPPER = Style.registerStyle({
   width: '100vmin',
@@ -39,9 +35,10 @@ const ITEM = Style.registerStyle({
 
 class TestGrid extends React.Component {
   render () {
-    const items = Immutable.Range(0,7).map((n) => {
-      return <div className={ITEM.className} key={n}>
-        {n}
+    const items = Immutable.Range(0,37).map((n) => {
+      const letter = String.fromCharCode(65+n);
+      return <div className={ITEM.className} key={letter}>
+        {letter}
       </div>;
     });
 

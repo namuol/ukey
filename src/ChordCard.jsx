@@ -7,19 +7,17 @@ import Immutable from 'immutable';
 import getFingeringsFromChord from './getFingeringsFromChord';
 import createFretboard from './createFretboard';
 
-import equals from 'deep-equal';
-
-
-let cardWidth = (100 - 2*theme.mainPadding)/6 - 2;
-let cardHeight = 1.8*cardWidth;
+// let cardWidth = (100 - 2*theme.mainPadding)/6 - 2;
+// let cardHeight = 1.8*cardWidth;
 
 let WRAPPER = Style.registerStyle({
   flexShrink: 0,
-  width: `${cardWidth}vmin`,
-  height: `${cardHeight}vmin`,
-  margin: '1vmin',
+  // width: `${cardWidth}vmin`,
+  // height: `${cardHeight}vmin`,
+  width: '100%',
+  height: '100%',
+  margin: '0vmin',
   overflow: 'hidden',
-  cursor: 'pointer',
 });
 
 let LABEL = Style.registerStyle({
@@ -98,7 +96,7 @@ let ChordCard = React.createClass({
     let stringCount = fingerings.size;
 
     let fretCount = 5;
-    let height = (120 / (stringCount - 1)) * (fretCount-1);
+    let height = (100 / (stringCount - 1)) * (fretCount-1);
     let radius = height / fretCount * 0.33;
     let sidePadding = radius;
 
@@ -186,7 +184,7 @@ let ChordCard = React.createClass({
     }
 
     return (
-      <div className={WRAPPER.className}>
+      <div className={WRAPPER.className} style={this.props.style}>
         <div className={STYLE.className} style={style}>
           <div className={LABEL.className}>
             {chordName}

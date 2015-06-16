@@ -34,7 +34,11 @@ module.exports = function createWebpackConfig (params) {
           test: /\.tsv$/,
           exclude: /node_modules/,
           loaders: ['dsv-loader?delimiter=\t'],
-        }
+        },
+        {
+          test: /\.json$/,
+          loader: "json-loader",
+        },
       ],
       postLoaders: [
         {

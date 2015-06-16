@@ -3,5 +3,5 @@ export default {
   bgColor: '#ddf',
   fontFamily: 'Quicksand, sans-serif',
   labelColor: '#88a',
-  mainPadding: 4,
+  mainPadding: 2,
 };

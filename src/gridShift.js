@@ -2,67 +2,71 @@ import Immutable from 'immutable';
 
 import runTests from './util/runTests';
 
-let isEmpty = v => v == null;
+const isEmpty = v => v == null;
 
-function shift1D ({row, x}) {
+window.isEmpty = isEmpty;
+
+function shift1D ({list, pos, expand}) {
   // Search for the first empty space from X, to the left:
-  let leftSpace = row.slice(0,x).findLastIndex(isEmpty);
+  const leftSpace = list.slice(0,pos).findLastIndex(isEmpty);
   let rightSpace;
-
   if (leftSpace >= 0) {
     // There's room to our left, so shift left:
-    let rangeToShift = row.slice(leftSpace+1,x+1).toJS();
-    return row.set(x, null).splice(leftSpace, rangeToShift.length, ...rangeToShift);
-  } else if ((rightSpace = row.slice(x+1,row.size).findIndex(isEmpty)) >= 0) {
-    rightSpace = x + rightSpace + 1;
-    let rangeToShift = row.slice(x,rightSpace).toJS();
-    return row.set(x, null).splice(x+1, rangeToShift.length, ...rangeToShift);
+    const rangeToShift = list.slice(leftSpace+1,pos+1).toJS();
+    return list.set(pos, null).splice(leftSpace, rangeToShift.length, ...rangeToShift);
+  } else if ((rightSpace = list.slice(pos+1,list.size+1).findIndex(isEmpty)) >= 0) {
+    rightSpace = pos + rightSpace + 1;
+    const rangeToShift = list.slice(pos,rightSpace).toJS();
+    return list.set(pos, null).splice(pos+1, rangeToShift.length, ...rangeToShift);
+  }
+
+  if (expand) {
+    return list.splice(pos, 0, null);
   }
 
   return null;
 }
 
-export default function gridShift ({layout, coord}) {
-  let {x, y} = coord;
+export default function gridShift ({grid, coord}) {
+  const {x, y} = coord;
   
-  let row = layout.get(y);
+  const row = grid.get(y);
 
-  if (!row.get(x)) {
+  if (row == null || isEmpty(row.get(x))) {
     // Empty space; no need to shift anything.
-    return layout;
+    return grid;
   }
 
-  let newRow = shift1D({
-    row: row,
-    x: x,
+  const newRow = shift1D({
+    list: row,
+    pos: x,
   });
 
   if (newRow != null) {
-    return layout.set(y, newRow);
+    return grid.set(y, newRow);
   }
 
-  let col = layout.map(row => row.get(x));
+  const col = grid.map(row => row.get(x));
 
-  let newCol = shift1D({
-    row: col,
-    x: y,
+  const newCol = shift1D({
+    list: col,
+    pos: y,
+    expand: true,
   });
 
-  if (newCol != null) {
-    return layout.map((row, y) => {
-      return row.set(x, newCol.get(y));
-    });
-  }
-
-  return layout;
+  const width = grid.get(0).size;
+  return newCol.map((newValue, y) => {
+    const row = grid.get(y) || Immutable.List(new Array(width));
+    return row.set(x, newValue);
+  });
 };
 
-let N = null;
+const N = null;
 
-let tests = [
+const tests = [
   {
     input: {
-      layout: Immutable.fromJS([
+      grid: Immutable.fromJS([
         [N,1,2],
       ]),
       coord: {x: 0, y: 0},
@@ -75,7 +79,7 @@ let tests = [
 
   {
     input: {
-      layout: Immutable.fromJS([
+      grid: Immutable.fromJS([
         [0,1,N],
       ]),
       coord: {x: 1, y: 0},
@@ -88,7 +92,7 @@ let tests = [
 
   {
     input: {
-      layout: Immutable.fromJS([
+      grid: Immutable.fromJS([
         [N,1,2],
       ]),
       coord: {x: 1, y: 0},
@@ -101,7 +105,7 @@ let tests = [
 
   {
     input: {
-      layout: Immutable.fromJS([
+      grid: Immutable.fromJS([
         [N,1,2,3],
       ]),
       coord: {x: 2, y: 0},
@@ -114,7 +118,7 @@ let tests = [
 
   {
     input: {
-      layout: Immutable.fromJS([
+      grid: Immutable.fromJS([
         [0,1,2,N],
       ]),
       coord: {x: 1, y: 0},
@@ -127,7 +131,7 @@ let tests = [
 
   {
     input: {
-      layout: Immutable.fromJS([
+      grid: Immutable.fromJS([
         [N],
         [1],
         [2],
@@ -144,7 +148,7 @@ let tests = [
 
   {
     input: {
-      layout: Immutable.fromJS([
+      grid: Immutable.fromJS([
         [0],
         [1],
         [N],
@@ -161,7 +165,7 @@ let tests = [
 
   {
     input: {
-      layout: Immutable.fromJS([
+      grid: Immutable.fromJS([
         [N],
         [1],
         [2],
@@ -178,7 +182,7 @@ let tests = [
 
   {
     input: {
-      layout: Immutable.fromJS([
+      grid: Immutable.fromJS([
         [N],
         [1],
         [2],
@@ -192,6 +196,33 @@ let tests = [
       [2],
       [N],
       [3],
+    ],
+  },
+
+  {
+    input: {
+      grid: Immutable.fromJS([]),
+      coord: {x: 0, y: 0},
+    },
+
+    expected: [],
+  },
+
+  {
+    input: {
+      grid: Immutable.fromJS([
+        [0],
+        [1],
+        [2],
+      ]),
+      coord: {x: 0, y: 0},
+    },
+
+    expected: [
+      [N],
+      [0],
+      [1],
+      [2],
     ],
   },
 ];
