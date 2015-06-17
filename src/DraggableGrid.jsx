@@ -96,7 +96,6 @@ function getGridHeight (layout) {
   }, 0) + 1;
 }
 
-
 function getDefaultLayout (props) {
   const {
     gridWidth,

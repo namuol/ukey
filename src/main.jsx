@@ -26,6 +26,7 @@ Style.inject();
 // }).toJS());
 
 import TestGrid from './TestGrid';
+import TestGrid2 from './TestGrid2';
 
 window.addEventListener('load', () => {
   page('/', (ctx, next) => {
@@ -41,6 +42,16 @@ window.addEventListener('load', () => {
 
     React.render(
       <TestGrid />
+    , document.getElementById('main'));
+  });
+
+  page('/testgrid2', (ctx, next) => {
+    let GRID = Style.registerStyle({
+      width: '100%',
+    });
+
+    React.render(
+      <TestGrid2 />
     , document.getElementById('main'));
   });
 
