@@ -21,7 +21,6 @@
     "immutable": "^3.7.3",
     "json-loader": "^0.5.2",
     "node-libs-browser": "^0.5.2",
-    "node-uuid": "^1.4.3",
     "page": "^1.6.3",
     "qs": "^3.1.0",
     "react": "^0.13.3",
@@ -30,6 +29,7 @@
     "react-hot-loader": "^1.2.7",
     "teoria": "^1.9.0",
     "transform-loader": "^0.2.2",
+    "uuid": "^2.0.1",
     "webpack": "^1.9.10",
     "webpack-dev-server": "^1.9.0"
   }

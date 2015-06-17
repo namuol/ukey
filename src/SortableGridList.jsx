@@ -22,49 +22,30 @@ function isNumber (o) {
 }
 
 function gridCoordToIdx ({x, y, gridWidth}) {
-  return y * gridWidth + clamp(x, 0, gridWidth);
-}
-
-function getIdxFromClientOffset ({element, clientOffset, gridWidth, gridHeight}) {
-  const {left, top, width, height} = element.getBoundingClientRect();
-  const {scrollLeft, scrollTop} = document.documentElement;
-
-  const coord = {
-    x: Math.floor(gridWidth * ((clientOffset.x - left - scrollLeft) / width)),
-    y: Math.floor(gridHeight * ((clientOffset.y - top - scrollTop) / height)),
-  };
-
-  return gridCoordToIdx({
-    gridWidth,
-    ...coord,
-  });
+  return y * gridWidth + x;
 }
 
 function getLayoutPositionFromClientOffset ({element, clientOffset, gridWidth, gridHeight, component}) {
   const {left, top, width, height} = element.getBoundingClientRect();
   const {scrollLeft, scrollTop} = document.documentElement;
+  const layout = component.getLayout();
 
-  const sectionDisplayHeights = getSectionDisplayHeights({
-    layout: component.state.layout,
-    ...component.props,
-  });
-
-  const vSpacing = component.props.vSpacing;
+  const sectionDisplayHeights = getMaxSectionDisplayHeights(component.props, layout);
 
   const sectionTops = getSectionTops({sectionDisplayHeights, ...component.props});
 
   // TODO HACK: I'm assuming we're using VMIN and that VMIN is width, not height:
-  const mouseY = ((clientOffset.y - top - scrollTop) / width) * 100;
+  const mouseY = clamp(((clientOffset.y - top - scrollTop) / width) * 100, 0, sectionTops.last());
 
   // First determine the current section:
-  const findResult = sectionTops.reduce((result, sectionTop, sectionNumber) => {
+  const findResult = sectionTops.slice(0,sectionTops.size-1).reduce((result, sectionTop, sectionNumber) => {
     if (!!result) {
       return result;
     }
 
     const sectionDisplayHeight = sectionDisplayHeights.get(sectionNumber);
 
-    if (mouseY > sectionTop && mouseY < (sectionTop + sectionDisplayHeight + vSpacing*(sectionNumber+1))) {
+    if (mouseY >= sectionTop && mouseY <= (sectionTop + sectionDisplayHeight)) {
       return [sectionNumber, sectionTop, sectionDisplayHeight];
     }
   }, false);
@@ -72,14 +53,14 @@ function getLayoutPositionFromClientOffset ({element, clientOffset, gridWidth, g
   const [section, sectionTop, sectionDisplayHeight] = findResult;
 
   const sectionHeight = getSectionHeight({
-    section: component.state.layout.get(section),
+    section: layout.get(section),
     gridWidth,
   });
 
   // Determine coordinate within the section:
   const coord = {
     x: Math.floor(gridWidth * ((clientOffset.x - left - scrollLeft) / width)),
-    y: Math.floor((mouseY - sectionTop) / (sectionDisplayHeight/sectionHeight)),
+    y: Math.min(sectionHeight-1, Math.floor((mouseY - sectionTop) / (sectionDisplayHeight/sectionHeight))),
   };
 
   return {
@@ -128,7 +109,7 @@ function handleDragEvent (props, monitor, component, oldLayout) {
     clientOffset: monitor.getClientOffset(),
     gridWidth: component.props.gridWidth,
     gridHeight: getTotalHeight({
-      layout: component.state.layout,
+      layout: component.getLayout(),
       gridWidth: component.props.gridWidth,
     }),
   });
@@ -137,19 +118,30 @@ function handleDragEvent (props, monitor, component, oldLayout) {
     return;
   }
 
+  console.log('childKey', item.childKey);
+  console.log({sectionNumber, idx});
+
   const layout = oldLayout.toJS();
   const oldSection = layout[oldSectionNumber];
-  const newSection = layout[sectionNumber];
+  let newSection = layout[sectionNumber];
+  console.log('oldSection before', oldSection.join(''));
+  console.log('newSection before', newSection.join(''));
   oldSection.splice(oldIdx, 1);
   newSection.splice(idx, 0, item.childKey);
+  console.log('oldSection after', oldSection.join(''));
+  console.log('newSection after', newSection.join(''));
   return Immutable.fromJS(layout);
 }
 
 const target = {
   hover (props, monitor, component) {
-    let newLayout = handleDragEvent(...arguments, component.state.layout);
+    const oldLayout = component.getLayout();
+    const newLayout = handleDragEvent(...arguments, oldLayout);
     
-    if (newLayout) {
+    if (newLayout && !Immutable.is(oldLayout, newLayout)) {
+      console.log('HOVER:');
+      console.log('oldLayout', oldLayout.toJS());
+      console.log('newLayout', newLayout.toJS());
       component.setState({
         layout: newLayout,
       });
@@ -157,14 +149,16 @@ const target = {
   },
 
   drop (props, monitor, component) {
-    let newLayout = handleDragEvent(...arguments, component.props.layout);
+    const oldLayout = component.getLayout();
+    const newLayout = handleDragEvent(...arguments, oldLayout) || oldLayout;
     
-    if (newLayout) {
-      component.setState({
-        layout: newLayout,
-      });
-      component.props.onLayoutChanged(newLayout);
-    }
+    console.log('DROP:');
+    console.log('oldLayout', oldLayout.toJS());
+    console.log('newLayout', newLayout.toJS());
+    component.props.onLayoutChanged(newLayout);
+    component.setState({
+      layout: null,
+    });
   }
 };
 
@@ -175,19 +169,20 @@ let collect = (connect, monitor) => {
   };
 };
 
-function getSectionDisplayHeight ({section, gridWidth, rowHeight, spacing}) {
-  return getSectionHeight({section, gridWidth}) * (rowHeight + spacing);
+function getSectionDisplayHeight ({section, gridWidth, rowHeight, spacing, vSpacing}) {
+  const sectionHeight = getSectionHeight({section, gridWidth});
+  return sectionHeight*rowHeight + (sectionHeight + 1)*spacing + vSpacing;
 }
 
-function getSectionDisplayHeights ({layout, gridWidth, rowHeight, spacing}) {
+function getSectionDisplayHeights ({layout, gridWidth, rowHeight, spacing, vSpacing}) {
   return layout.map((section) => {
-    return getSectionDisplayHeight({section, gridWidth, rowHeight, spacing});
+    return getSectionDisplayHeight({section, gridWidth, rowHeight, spacing, vSpacing});
   });
 }
 
 function getSectionTops ({sectionDisplayHeights, gridWidth, rowHeight, spacing, vSpacing}) {
   return sectionDisplayHeights.reduce((tops, sectionDisplayHeight) => {
-    return tops.push(tops.last() + vSpacing + sectionDisplayHeight);
+    return tops.push(tops.last() + sectionDisplayHeight);
   }, Immutable.List([0]));
 }
 
@@ -209,6 +204,17 @@ function checkProps (props) {
   );
 }
 
+function getMaxSectionDisplayHeights (props, layout) {
+  const {gridWidth, rowHeight, spacing, vSpacing} = props;
+
+  const sectionDisplayHeights_props = getSectionDisplayHeights({layout: props.layout, gridWidth, rowHeight, spacing, vSpacing});
+  const sectionDisplayHeights_state = getSectionDisplayHeights({layout, gridWidth, rowHeight, spacing, vSpacing});
+
+  return sectionDisplayHeights_props.reduce((result, sectionDisplayHeight_props, sectionNumber) => {
+    return result.push(Math.max(sectionDisplayHeight_props, sectionDisplayHeights_state.get(sectionNumber) || 0));
+  }, Immutable.List());
+}
+
 @DragDropContext(HTML5Backend)
 @DropTarget('DRAGGABLE_ITEM', target, collect)
 export default class SortableGridList extends React.Component {
@@ -221,22 +227,25 @@ export default class SortableGridList extends React.Component {
     gridWidth: 6,
     rowHeight: 12,
     spacing: 2,
-    vSpacing: 2,
+    vSpacing: 0,
     unit: 'vmin'
   };
 
   state = (() => {
     checkProps(this.props);
-    return {
-      layout: this.props.layout,
-    };
+    return {};
   })();
 
   componentWillReceiveProps (newProps) {
     checkProps(newProps);
-    this.setState({
-      layout: newProps.layout,
-    });
+  }
+
+  shouldComponentUpdate (newProps, newState) {
+    return !Immutable.is(newState.layout, this.state.layout) || !Immutable.is(newProps.children, this.props.children);
+  }
+
+  getLayout () {
+    return this.state.layout || this.props.layout;
   }
 
   render () {
@@ -249,9 +258,9 @@ export default class SortableGridList extends React.Component {
       vSpacing,
     } = this.props;
 
-    const {
-      layout,
-    } = this.state;
+    const layout = this.getLayout();
+
+    console.log('renderLayout', layout.toJS(), this.props.layout.toJS());
     
     const itemWidth = ({space=spacing}) => {
       return `(${100/gridWidth}% - ${space + space/gridWidth}${unit})`;
@@ -284,30 +293,45 @@ export default class SortableGridList extends React.Component {
 
     const gridHeight = getTotalHeight({layout, gridWidth});
 
-    const totalHeight = gridHeight * rowHeight + (gridHeight + 1)*spacing;
-
     const children = this.props.children.reduce((result, child) => {
       return result.set(child.key, child);
     }, Immutable.Map());
 
-    const sectionDisplayHeights = getSectionDisplayHeights({layout, ...this.props});
+    const sectionDisplayHeights = getMaxSectionDisplayHeights(this.props, layout);
     const sectionTops = getSectionTops({sectionDisplayHeights, ...this.props});
+    const totalHeight = sectionDisplayHeights.reduce((r, s) => {return r + s}, 0);
 
     return connectDropTarget(
       <div className={this.props.className}
         style={Object.assign({}, this.props.style, {
           position: 'relative',
-          height: `${totalHeight}${unit}`,
         })}
       >
         <div
           style={{
             width: '100%',
-            height: '100%',
+            transition: 'height 250ms',
+            height: `${totalHeight}${unit}`,
+            backgroundColor: 'rgba(0,0,0,0.1)',
           }}
           ref='container'
         >
+          {sectionDisplayHeights.map((sectionDisplayHeight, sectionNumber) => {
+            console.log(`section-#${sectionNumber} height: ${sectionDisplayHeight}`);
+
+            return <div key={sectionNumber} style={{
+              position: 'absolute',
+              left: 0,
+              top: `${sectionTops.get(sectionNumber)}${unit}`,
+              width: '100%',
+              transition: 'height 250ms, top 250ms',
+              height: `${sectionDisplayHeight}${unit}`,
+              background: `rgba(255,0,0,${0.1 * (sectionNumber+1)})`,
+            }} />
+          })}
+
           {React.Children.map(this.props.children, (child) => {
+            console.log(layout.toJS(), child.key);
             let layoutPos = getLayoutPosition({layout, child});
             let pos = idxToScreenPosition(layoutPos.idx);
             pos.y += sectionTops.get(layoutPos.section);

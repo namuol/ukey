@@ -36,14 +36,19 @@ const ITEM = Style.registerStyle({
 class TestGrid2 extends React.Component {
   static defaultProps = {
     // letters: Immutable.Range(0,8).map(n => String.fromCharCode(65+n)).toList(),
-    letters: Immutable.OrderedSet('ABCDEFG'.split('')),
+    letters: Immutable.OrderedSet('ABCDEFGHIJKLMN'.split('')),
   };
 
   state = (() => {
     return {
-      layout: Immutable.fromJS([['A','B','C'],['D', 'F'],['E', 'G']]),
+      layout: this.processLayout(Immutable.fromJS([this.props.letters.toJS()])),
     }
   })();
+
+  processLayout (layout) {
+    // Filter empty sections:
+    return layout.filter(section => section.size > 0).push(Immutable.List());
+  }
 
   render () {
     const items = this.props.letters.map((letter) => {
@@ -58,10 +63,11 @@ class TestGrid2 extends React.Component {
           <SortableGridList className={GRID.className}
             rowHeight={(100 - 5 * 2)/4}
             gridWidth={6}
+            vSpacing={0}
             layout={this.state.layout}
             onLayoutChanged={(newLayout) => {
               this.setState({
-                layout: newLayout,
+                layout: this.processLayout(newLayout),
               });
             }}
           >
@@ -70,7 +76,7 @@ class TestGrid2 extends React.Component {
 
           <Style.Element />
         </div>
-        </div>
+      </div>
     );
   }
 };

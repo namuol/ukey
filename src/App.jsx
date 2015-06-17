@@ -10,11 +10,12 @@ import qs from 'qs';
 import createFretboard from './createFretboard';
 import getFingeringsFromChord from './getFingeringsFromChord';
 
-import DraggableGrid from './DraggableGrid';
+import SortableGridList from './SortableGridList';
 
 import ChordCard from './ChordCard';
 
 import Color from 'color';
+import uuid from 'uuid';
 
 let WRAPPER = Style.registerStyle({
   width: '100vmin',
@@ -82,7 +83,7 @@ let LABEL = Style.registerStyle({
 
 let CHORD_OUTPUT = Style.registerStyle({
   width: '100%',
-  marginTop: `${topBarHeight - theme.mainPadding}vmin`,
+  marginTop: `${topBarHeight}vmin`,
 });
 
 let fretboard = createFretboard({
@@ -90,12 +91,31 @@ let fretboard = createFretboard({
   fretCount: 5,
 });
 
+const ITEM = Style.registerStyle({
+  width: '100%',
+  height: '100%',
+  textAlign: 'center',
+  borderRadius: '2vmin',
+  backgroundColor: 'white',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontSize: '4vmin',
+});
+
+function processLayout (layout) {
+  // Filter empty sections:
+  return layout.filter(section => section.size > 0).push(Immutable.List());
+}
+
 let App = React.createClass({
   getDefaultProps: function () {
     return {
-      chordsText: 'C G Am F F F',
+      chordsText: '',
       transpose: 0,
       chords: Immutable.List(),
+      chordInputs: Immutable.List(),
+      layout: processLayout(Immutable.fromJS([[]])),
     };
   },
   
@@ -104,30 +124,27 @@ let App = React.createClass({
   },
 
   render: function () {
-    const chordInputs = this.state.chordsText.split(/\s/).filter(c => c.length);
-
-    const chordCards = chordInputs.map((chord, idx) => {
-      return <ChordCard
-        key={idx}
-        chord={chord}
-        fretboard={fretboard}
-        transpose={parseInt(this.state.transpose)}
-        style={{
-          margin: '1vmin',
-        }}
-      />;
-    });
+    const chordInputs = this.state.chordInputs;
+    let layout = this.state.layout;
+    
+    if (chordInputs.size > 0) {
+      layout = layout.unshift(chordInputs.map(c => c.id));
+    }
 
     return (
       <div className={WRAPPER.className}>
         <div className={STYLE.className}>
           <form className={CHORD_INPUT.className}
             onSubmit={(e) => {
+              const chordIDs = chordInputs.map(c => c.id);
               e.preventDefault();
-              console.log('submit');
+              const layout = this.state.layout;
+              const newLayout = processLayout(layout.set(layout.size-2, layout.get(layout.size-2).push(...(chordIDs.toJS()))));
               this.setState({
-                chords: this.state.chords.push(...chordInputs),
+                chords: this.state.chords.push(...(chordInputs.toJS())),
+                layout: newLayout,
                 chordsText: '',
+                chordInputs: Immutable.List(),
               });
             }}
           >
@@ -136,34 +153,43 @@ let App = React.createClass({
               value={this.state.chordsText}
               spellCheck={false}
               onChange={(e) => {
+                const chordInputs = Immutable.List(e.target.value.split(/\s/).filter(c => c.length).map((chord, idx) => {
+                  const existingChord = this.state.chordInputs.get(idx);
+                  return {
+                    id: existingChord ? existingChord.id : uuid.v4(),
+                    text: chord,
+                  };
+                }));
+
+
                 this.setState({
                   chordsText: e.target.value,
+                  chordInputs: chordInputs,
                 });
               }}
             />
           </form>
 
           <div className={CHORD_OUTPUT.className}>
-            <DraggableGrid 
+            <SortableGridList 
               rowHeight={(100 - 5 * 2)/4}
               spacing={theme.mainPadding}
-              layout={this.state.layout}
+              layout={layout}
               onLayoutChanged={(layout) => {
-                console.log('layout changed!');
                 this.setState({
-                  layout: layout,
+                  layout: processLayout(layout),
                 });
               }}
             >
-              {this.state.chords.map((chord, idx) => {
+              {this.state.chords.push(...(chordInputs.toJS())).map((chord, idx) => {
                 return <ChordCard
-                  key={idx}
-                  chord={chord}
+                  key={chord.id}
+                  chord={chord.text}
                   fretboard={fretboard}
                   transpose={parseInt(this.state.transpose)}
                 />;
               })}
-            </DraggableGrid>
+            </SortableGridList>
           </div>
         </div>
 
