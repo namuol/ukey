@@ -25,7 +25,7 @@ function isNumber (o) {
 }
 
 function gridCoordToIdx ({x, y, gridWidth}) {
-  return y * gridWidth + clamp(0,x,gridWidth);
+  return y * gridWidth + clamp(0,x,gridWidth-1);
 }
 
 function getLayoutPositionFromClientOffset ({element, clientOffset, gridWidth, gridHeight, component}) {

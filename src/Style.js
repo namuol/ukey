@@ -3,10 +3,10 @@ import autoPrefix from './util/autoPrefix';
 
 let Style = FreeStyle.create();
 
-let register = Style.registerStyle.bind(Style);
+let registerStyle = Style.registerStyle.bind(Style);
 
 Style.registerStyle = function registerStyle_prefix (...args) {
-  return register(autoPrefix(...args));
+  return registerStyle(...args.map(autoPrefix));
 }
 
 if (process.env.DEBUG_STYLE_PERF_WORKAROUND) {

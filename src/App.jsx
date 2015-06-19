@@ -19,14 +19,14 @@ import uuid from 'uuid';
 import clamp from './clamp';
 import mod from './mod';
 
-let WRAPPER = Style.registerStyle({
+const WRAPPER = Style.registerStyle({
   width: '100vmin',
   minHeight: '100vh',
   margin: 'auto',
   backgroundColor: theme.bgColor,
 });
 
-let STYLE = Style.registerStyle({
+const STYLE = Style.registerStyle({
   display: 'flex',
   flexDirection: 'column',
   fontFamily: theme.fontFamily,
@@ -37,7 +37,7 @@ let STYLE = Style.registerStyle({
   fontSize: '4vmin',
 });
 
-let BRAND_HEADER = Style.registerStyle({
+const BRAND_HEADER = Style.registerStyle({
   margin: 0,
   fontWeight: 400,
   marginTop: '-0.7vmin',
@@ -48,7 +48,7 @@ let BRAND_HEADER = Style.registerStyle({
 
 const topBarHeight = 15;
 
-let TOP_BAR = Style.registerStyle({
+const TOP_BAR = Style.registerStyle({
   display: 'flex',
   flexDirection: 'row',
   justifyContent: 'space-between',
@@ -63,7 +63,7 @@ let TOP_BAR = Style.registerStyle({
   top: 0,
 });
 
-let CHORD_TEXT_INPUT = Style.registerStyle({
+const CHORD_TEXT_INPUT = Style.registerStyle({
   fontFamily: theme.fontFamily,
   fontSize: '5vmin',
   border: 'none',
@@ -76,7 +76,7 @@ let CHORD_TEXT_INPUT = Style.registerStyle({
   // textAlign: 'center',
 });
 
-let TRANSPOSE_INPUT = Style.registerStyle({
+const TRANSPOSE_INPUT = Style.registerStyle({
   fontFamily: theme.fontFamily,
   fontSize: '4vmin',
   border: 'none',
@@ -90,7 +90,7 @@ let TRANSPOSE_INPUT = Style.registerStyle({
   // textAlign: 'center',
 });
 
-let TRANSPOSE_INDICATOR = Style.registerStyle({
+const TRANSPOSE_INDICATOR = Style.registerStyle({
   fontFamily: theme.fontFamily,
   fontSize: '6vmin',
   border: 'none',
@@ -112,7 +112,7 @@ let TRANSPOSE_INDICATOR = Style.registerStyle({
   padding: 0,
 });
 
-let BUTTON = Style.registerStyle({
+const BUTTON = Style.registerStyle({
   fontFamily: theme.fontFamily,
   fontSize: '5vmin',
   border: 'none',
@@ -136,7 +136,11 @@ let BUTTON = Style.registerStyle({
   textTransform: 'uppercase',
 });
 
-let LABEL = Style.registerStyle({
+let EDIT_BUTTON = Style.registerStyle(BUTTON.style, {
+  width: '20vmin',
+});
+
+const LABEL = Style.registerStyle({
   margin: 0,
   marginBottom: '2vmin',
   fontSize: '5vmin',
@@ -144,12 +148,12 @@ let LABEL = Style.registerStyle({
   color: theme.labelColor,
 });
 
-let CHORD_OUTPUT = Style.registerStyle({
+const CHORD_OUTPUT = Style.registerStyle({
   width: '100%',
   marginTop: `${topBarHeight}vmin`,
 });
 
-let fretboard = createFretboard({
+const fretboard = createFretboard({
   tuning: ['G', 'C', 'E', 'A'],
   fretCount: 5,
 });
@@ -167,11 +171,7 @@ const ITEM = Style.registerStyle({
 });
 
 const INACTIVE_CARD = Style.registerStyle({
-  opacity: 0.5,
-});
-
-const EDITING_CARD = Style.registerStyle({
-  boxShadow: '0 1vmin 2vmin rgba(0,0,0,0.3)',
+  opacity: 0.8,
 });
 
 function processLayout ({layout}) {
@@ -209,6 +209,7 @@ let App = React.createClass({
       chordInputs: chordInputs,
       chordVariations: Immutable.Map(),
       layout: processLayout({layout: Immutable.fromJS([[]])}),
+      editing: false,
     };
   },
   
@@ -216,17 +217,29 @@ let App = React.createClass({
     return Object.assign({}, this.props);
   },
 
+  deleteChord: function (chordID) {
+    let chordIdx;
+    const sectionIdx = this.state.layout.findIndex(section => (chordIdx = section.indexOf(chordID)) >= 0);
+    const layout = this.state.layout.set(sectionIdx, this.state.layout.get(sectionIdx).splice(chordIdx, 1));
+    this.setState({
+      layout: processLayout({layout}),
+      chords: this.state.chords.splice(this.state.chords.findIndex(c => c.id === chordID), 1),
+    })
+  },
+
   render: function () {
     const {
       chordInputs,
       chordVariations,
+      editing,
     } = this.state;
 
     let layout = this.state.layout;
     // console.log('layout', layout && layout.toJS());
 
     if (chordInputs.size > 0) {
-      layout = layout.unshift(getChordInputIDs(chordInputs));
+      const secondToLastSection = layout.get(layout.size-2).push(...getChordInputIDs(chordInputs).toJS());
+      layout = layout.set(layout.size-2, secondToLastSection);
     }
     
     return (
@@ -236,12 +249,12 @@ let App = React.createClass({
             onSubmit={(e) => {
               e.preventDefault();
               const chordInputIDs = getChordInputIDs(chordInputs);
-              const layout = this.state.layout;
-              const secondToLastSection = layout.get(layout.size-2).push(...(chordInputIDs.toJS()));
-              const newLayout = layout.set(layout.size-2, secondToLastSection);
+              // const layout = this.state.layout;
+              // const secondToLastSection = layout.get(layout.size-2).push(...(chordInputIDs.toJS()));
+              // const newLayout = layout.set(layout.size-2, secondToLastSection);
               this.setState({
                 chords: this.state.chords.push(...(chordInputs.toJS())),
-                layout: processLayout({layout: newLayout}),
+                layout: processLayout({layout: layout}),
                 chordText: '',
                 chordInputs: Immutable.List(),
               });
@@ -278,8 +291,11 @@ let App = React.createClass({
               });
             }}>▲</div>
 
-            <div className={BUTTON.className} onClick={(e) => {
-            }}>Edit</div>
+            <div className={EDIT_BUTTON.className} onClick={(e) => {
+              this.setState({
+                editing: !editing,
+              });
+            }}>{editing ? 'Done' : 'Edit'}</div>
 
             <input type="submit" style={{height: 0, padding: 0, margin: 0, position: 'absolute', visibility: 'hidden'}} />
           </form>
@@ -303,24 +319,37 @@ let App = React.createClass({
                 };
 
                 let locked = false;
+                let hovering = false;
+                let inactive = false;
                 if (chordInputs.size > 0) {
                   locked = true;
                   if (idx < this.state.chords.size) {
-                    style = INACTIVE_CARD.style;
+                    inactive = true;
+                    // style = INACTIVE_CARD.style;
                   } else {
-                    style = EDITING_CARD.style;
+                    hovering = true;
+                    // style = EDITING_CARD.style;
                   }
                 }
                 return <ChordCard
                   key={chord.id}
                   locked={locked}
+                  hovering={hovering}
+                  inactive={inactive}
                   chord={chord.text}
+                  canDelete={editing && !hovering}
+                  onDelete={() => {
+                    this.deleteChord(chord.id);
+                  }}
                   variation={chordVariations.get(chord.id)}
-                  onVariationChanged={(variation) => {
-                    console.log('variation CHANGED!');
-                    this.setState({
-                      chordVariations: chordVariations.set(chord.id, variation),
-                    });
+                  onClick={() => {
+                    if (editing) {
+                    } else {
+                      console.log('variation changed...', this.state);
+                      this.setState({
+                        chordVariations: chordVariations.set(chord.id, chordVariations.get(chord.id) + 1),
+                      });
+                    }
                   }}
                   fretboard={fretboard}
                   transpose={parseInt(this.state.transpose)}

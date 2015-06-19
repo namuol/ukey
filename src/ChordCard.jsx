@@ -10,24 +10,76 @@ import createFretboard from './createFretboard';
 // let cardWidth = (100 - 2*theme.mainPadding)/6 - 2;
 // let cardHeight = 1.8*cardWidth;
 
-let WRAPPER = Style.registerStyle({
+const APPEAR = Style.registerKeyframes({
+  from: {
+    transform: 'scale(0)',
+    opacity: 0,
+  },
+  to: {
+    transform: 'scale(1)',
+    opacity: 1,
+  },
+});
+
+const DISAPPEAR = Style.registerKeyframes({
+  from: {
+    transform: 'scale(1)',
+    opacity: 1,
+  },
+  to: {
+    transform: 'scale(0)',
+    opacity: 0,
+  },
+});
+
+const HOVER_APPEAR = Style.registerKeyframes({
+  from: {
+    transform: 'scale(0) translateY(-1vmin)',
+    opacity: 0,
+  },
+  to: {
+    transform: 'scale(1) translateY(-1vmin)',
+    opacity: 1,
+  },
+});
+
+const WRAPPER = Style.registerStyle({
   flexShrink: 0,
   // width: `${cardWidth}vmin`,
   // height: `${cardHeight}vmin`,
   width: '100%',
   height: '100%',
   margin: '0vmin',
-  overflow: 'hidden',
   border: `1vmin solid white`,
   borderRadius: '1vmin',
   background: 'white',
+  transition: 'box-shadow 200ms, transform 200ms',
+  position: 'relative',
+  overflow: 'visible',
 });
 
-let WRAPPER_SELECTED = Style.registerStyle(WRAPPER.style, {
+const WRAPPER_SELECTED = Style.registerStyle(WRAPPER.style, {
   border: `1vmin solid ${theme.highlight}`,
 });
 
-let LABEL = Style.registerStyle({
+const WRAPPER_HOVERING = Style.registerStyle(WRAPPER.style, {
+  animationName: HOVER_APPEAR.name,
+  animationDuration: '100ms',
+  boxShadow: '0 1vmin 3vmin rgba(0,0,0,0.3)',
+  transform: 'translateY(-1vmin)',
+});
+
+const deleteAnimationDuration = 150;
+const WRAPPER_DELETED = Style.registerStyle(WRAPPER.style, {
+  animationName: DISAPPEAR.name,
+  animationDuration: `${deleteAnimationDuration}ms`,
+});
+
+const WRAPPER_INACTIVE = Style.registerStyle(WRAPPER.style, {
+  opacity: 0.6,
+});
+
+const LABEL = Style.registerStyle({
   fontSize: '3.5vmin',
   fontWeight: 700,
   color: 'black',
@@ -36,7 +88,7 @@ let LABEL = Style.registerStyle({
   margin: 0,
 });
 
-let STYLE = Style.registerStyle({
+const STYLE = Style.registerStyle({
   width: '100%',
   height: '100%',
   display: 'flex',
@@ -50,9 +102,10 @@ let STYLE = Style.registerStyle({
   paddingTop: '0vmin',
   borderRadius: '1vmin',
   flexShrink: 0,
+  overflow: 'hidden',
 });
 
-let SVG = Style.registerStyle({
+const SVG = Style.registerStyle({
   flexShrink: 0,
   display: 'flex',
   justifyContent: 'center',
@@ -63,22 +116,56 @@ let SVG = Style.registerStyle({
   // width: '100%',
 });
 
-let STRING = Style.registerStyle({
+const STRING = Style.registerStyle({
   stroke: '#aaf',//theme.labelColor,
   // strokeLinecap: 'round',
   strokeWidth: 2,
 });
 
-let NOTE = Style.registerStyle({  
+const NOTE = Style.registerStyle({  
   fill: theme.color,
   stroke: 'none',
   transform: `translate3d(0, 0, 0)`,
   transition: 'all 450ms',
 });
 
-let ChordCard = React.createClass({
+const deleteButtonWidth = 6;
+
+const DELETE_BUTTON_BASE = Style.registerStyle({
+  width: `${deleteButtonWidth}vmin`,
+  height: `${deleteButtonWidth}vmin`,
+  borderRadius: '50%',
+  background: '#e66',
+  color: 'white',
+  position: 'absolute',
+  top: `-${deleteButtonWidth/2 - 0.5}vmin`,
+  left: `-${deleteButtonWidth/2 - 0.5}vmin`,
+  textAlign: 'center',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  alignContent: 'center',
+  fontWeight: 700,
+  fontSize: '4vmin',
+  border: '0.7vmin solid white',
+  opacity: 0,
+});
+
+const DELETE_BUTTON = Style.registerStyle(DELETE_BUTTON_BASE.style, {
+  animationName: APPEAR.name,
+  animationDuration: '200ms',
+  opacity: 1,
+});
+
+const DELETE_BUTTON_HIDDEN = Style.registerStyle(DELETE_BUTTON_BASE.style, {
+  animationName: DISAPPEAR.name,
+  animationDuration: '200ms',
+  opacity: 0,
+});
+
+const ChordCard = React.createClass({
   getDefaultProps: function () {
-    let fretboard = createFretboard({
+    const fretboard = createFretboard({
       tuning: ['G','C','E','A'],
       fretCount: 5,
       fretWindow: 5,
@@ -91,6 +178,12 @@ let ChordCard = React.createClass({
     };
   },
 
+  getInitialState: function () {
+    return {
+      deleted: false,
+    };
+  },
+
   // shouldComponentUpdate: function (newProps, newState) {
   //   try {
   //     return teoria.chord(this.props.chord).name !== teoria.chord(newProps.chord).name;
@@ -100,7 +193,7 @@ let ChordCard = React.createClass({
   // },
 
   getCardSVG: function (fingerings) {
-    let stringCount = fingerings.size;
+    const stringCount = fingerings.size;
 
     let fretCount = 5;
     let height = (100 / (stringCount - 1)) * (fretCount-1);
@@ -174,7 +267,14 @@ let ChordCard = React.createClass({
   render: function () {
     let {
       variation,
+      hovering,
+      inactive,
+      canDelete,
     } = this.props;
+
+    let {
+      deleted,
+    } = this.state;
 
     let fingerings, cardSVG, chordName, variations;
 
@@ -196,14 +296,29 @@ let ChordCard = React.createClass({
       // style.backgroundColor = '#faa';
     }
 
+    let WRAPPER_className = WRAPPER.className;
+
+    if (deleted) {
+      WRAPPER_className = WRAPPER_DELETED.className;
+    } else if (hovering) {
+      WRAPPER_className = WRAPPER_HOVERING.className;
+    } else if (inactive) {
+      WRAPPER_className = WRAPPER_INACTIVE.className;
+    }
+
+    let DELETE_BUTTON_className;
+
+    if (canDelete) {
+      DELETE_BUTTON_className = DELETE_BUTTON.className;
+    } else {
+      DELETE_BUTTON_className = DELETE_BUTTON_HIDDEN.className;
+    }
 
     return (
-      <div className={WRAPPER.className} style={this.props.style}>
+      <div className={WRAPPER_className} style={this.props.style}>
         <div className={STYLE.className} style={style} onClick={(e) => {
-          if (typeof this.props.onVariationChanged === 'function') {
-            const newVariation = (variation + 1) % variations.size;
-            console.log('variation click - new variation', newVariation);
-            this.props.onVariationChanged(newVariation);
+          if (typeof this.props.onClick === 'function') {
+            this.props.onClick(e);
           }
         }}>
           <div className={LABEL.className}>
@@ -211,6 +326,17 @@ let ChordCard = React.createClass({
           </div>
           {cardSVG}
         </div>
+
+        {<div className={DELETE_BUTTON_className} onClick={() => {
+          if (!canDelete) {
+            return;
+          }
+
+          setTimeout(this.props.onDelete, deleteAnimationDuration);
+          this.setState({
+            deleted: true,
+          });
+        }}>⨯</div>}
       </div>
     );
   }
