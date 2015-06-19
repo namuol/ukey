@@ -242,6 +242,7 @@ export default class DraggableGrid extends React.Component {
             return (
               <DraggableItem
                 key={child.key}
+                locked={!!child.props.locked}
                 childKey={child.key}
                 style={Object.assign({}, getStyleForPosition(pos), {
                   zIndex: 1,

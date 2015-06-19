@@ -18,6 +18,13 @@ let WRAPPER = Style.registerStyle({
   height: '100%',
   margin: '0vmin',
   overflow: 'hidden',
+  border: `1vmin solid white`,
+  borderRadius: '1vmin',
+  background: 'white',
+});
+
+let WRAPPER_SELECTED = Style.registerStyle(WRAPPER.style, {
+  border: `1vmin solid ${theme.highlight}`,
 });
 
 let LABEL = Style.registerStyle({
@@ -39,8 +46,8 @@ let STYLE = Style.registerStyle({
   alignContent: 'center',
   fontSize: '3vmin',
   backgroundColor: 'white',
-  padding: '1.5vmin',
-  paddingTop: '0.5vmin',
+  padding: '0.5vmin',
+  paddingTop: '0vmin',
   borderRadius: '1vmin',
   flexShrink: 0,
 });
@@ -57,7 +64,7 @@ let SVG = Style.registerStyle({
 });
 
 let STRING = Style.registerStyle({
-  stroke: theme.labelColor,
+  stroke: '#aaf',//theme.labelColor,
   // strokeLinecap: 'round',
   strokeWidth: 2,
 });
@@ -165,29 +172,42 @@ let ChordCard = React.createClass({
   },
 
   render: function () {
-    let fingerings, cardSVG, chordName;
+    let {
+      variation,
+    } = this.props;
+
+    let fingerings, cardSVG, chordName, variations;
 
     let style = {};
 
     try {
       chordName = teoria.chord(this.props.chord).name;
-      fingerings = getFingeringsFromChord({
+      variations = getFingeringsFromChord({
         chord: chordName,
         fretboard: this.props.fretboard,
         transpose: this.props.transpose,
-      }).get(0);
+      });
+      variation = (variation || 0) % variations.size;
+      fingerings = variations.get(variation);
       cardSVG = this.getCardSVG(fingerings);
     } catch (e) {
-      chordName = '?';
+      chordName = this.props.chord + '?';
       cardSVG = <div className={SVG.className}></div>;
-      style.backgroundColor = '#faa';
+      // style.backgroundColor = '#faa';
     }
+
 
     return (
       <div className={WRAPPER.className} style={this.props.style}>
-        <div className={STYLE.className} style={style}>
+        <div className={STYLE.className} style={style} onClick={(e) => {
+          if (typeof this.props.onVariationChanged === 'function') {
+            const newVariation = (variation + 1) % variations.size;
+            console.log('variation click - new variation', newVariation);
+            this.props.onVariationChanged(newVariation);
+          }
+        }}>
           <div className={LABEL.className}>
-            {chordName}
+            {chordName + (variation ? `(${variation+1})` : '')}
           </div>
           {cardSVG}
         </div>

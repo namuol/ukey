@@ -9,6 +9,10 @@ function collect (connect, monitor) {
 }
 
 const itemSource = {
+  canDrag (props) {
+    return !props.locked;
+  },
+
   beginDrag (props) {
     if (typeof props.onBeginDrag === 'function') {
       props.onBeginDrag(...arguments);
@@ -40,9 +44,10 @@ export default class DraggableItem extends React.Component {
     return connectDragSource(
       <div
         style={Object.assign({}, {
-          cursor: 'move',
+          cursor: this.props.locked ? 'inherit' : 'move',
           overflow: 'visible',
-          opacity: isDragging ? 0.5 : 1,
+          // opacity: isDragging ? 0.5 : 1,
+          zIndex: isDragging ? 4 : 1,
           // display: isDragging ? 'none' : 'initial',
         }, this.props.style)}
       >

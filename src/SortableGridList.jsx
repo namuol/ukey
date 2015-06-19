@@ -15,14 +15,17 @@ import HTML5Backend from 'react-dnd/modules/backends/HTML5';
 import DraggableItem from './DraggableItem';
 import DropSpot from './DropSpot';
 
+import Color from 'color';
 import clamp from './clamp';
+
+const PHI = 1.61803398875;
 
 function isNumber (o) {
   return typeof o === 'number';
 }
 
 function gridCoordToIdx ({x, y, gridWidth}) {
-  return y * gridWidth + x;
+  return y * gridWidth + clamp(0,x,gridWidth);
 }
 
 function getLayoutPositionFromClientOffset ({element, clientOffset, gridWidth, gridHeight, component}) {
@@ -118,18 +121,18 @@ function handleDragEvent (props, monitor, component, oldLayout) {
     return;
   }
 
-  console.log('childKey', item.childKey);
-  console.log({sectionNumber, idx});
+  // console.log('childKey', item.childKey);
+  // console.log({sectionNumber, idx});
 
   const layout = oldLayout.toJS();
   const oldSection = layout[oldSectionNumber];
   let newSection = layout[sectionNumber];
-  console.log('oldSection before', oldSection.join(''));
-  console.log('newSection before', newSection.join(''));
+  // console.log('oldSection before', oldSection.join(''));
+  // console.log('newSection before', newSection.join(''));
   oldSection.splice(oldIdx, 1);
   newSection.splice(idx, 0, item.childKey);
-  console.log('oldSection after', oldSection.join(''));
-  console.log('newSection after', newSection.join(''));
+  // console.log('oldSection after', oldSection.join(''));
+  // console.log('newSection after', newSection.join(''));
   return Immutable.fromJS(layout);
 }
 
@@ -139,27 +142,28 @@ const target = {
     const newLayout = handleDragEvent(...arguments, oldLayout);
     
     if (newLayout && !Immutable.is(oldLayout, newLayout)) {
-      console.log('HOVER:');
-      console.log('oldLayout', oldLayout.toJS());
-      console.log('newLayout', newLayout.toJS());
+      // console.log('HOVER:');
+      // console.log('oldLayout', oldLayout.toJS());
+      // console.log('newLayout', newLayout.toJS());
       component.setState({
         layout: newLayout,
       });
     }
   },
 
-  drop (props, monitor, component) {
-    const oldLayout = component.getLayout();
-    const newLayout = handleDragEvent(...arguments, oldLayout) || oldLayout;
-    
-    console.log('DROP:');
-    console.log('oldLayout', oldLayout.toJS());
-    console.log('newLayout', newLayout.toJS());
-    component.props.onLayoutChanged(newLayout);
-    component.setState({
-      layout: null,
-    });
-  }
+  // drop (props, monitor, component) {
+  //   console.log('DROP:');
+  //   const oldLayout = component.getLayout();
+  //   const newLayout = handleDragEvent(...arguments, oldLayout) || oldLayout;
+
+  //   console.log('oldLayout', oldLayout.toJS());
+  //   console.log('newLayout', newLayout.toJS());
+
+  //   component.props.onLayoutChanged(newLayout);
+  //   component.setState({
+  //     layout: null,
+  //   });
+  // }
 };
 
 let collect = (connect, monitor) => {
@@ -241,7 +245,7 @@ export default class SortableGridList extends React.Component {
   }
 
   shouldComponentUpdate (newProps, newState) {
-    return !Immutable.is(newState.layout, this.state.layout) || !Immutable.is(newProps.children, this.props.children);
+    return !Immutable.is(newState, this.state) || !Immutable.is(newProps, this.props);
   }
 
   getLayout () {
@@ -258,9 +262,13 @@ export default class SortableGridList extends React.Component {
       vSpacing,
     } = this.props;
 
+    const {
+      dragging,
+    } = this.state;
+
     const layout = this.getLayout();
 
-    console.log('renderLayout', layout.toJS(), this.props.layout.toJS());
+    // console.log('renderLayout', layout.toJS(), this.props.layout.toJS());
     
     const itemWidth = ({space=spacing}) => {
       return `(${100/gridWidth}% - ${space + space/gridWidth}${unit})`;
@@ -300,13 +308,26 @@ export default class SortableGridList extends React.Component {
     const sectionDisplayHeights = getMaxSectionDisplayHeights(this.props, layout);
     const sectionTops = getSectionTops({sectionDisplayHeights, ...this.props});
     const totalHeight = sectionDisplayHeights.reduce((r, s) => {return r + s}, 0);
-
-    return connectDropTarget(
+    return (
       <div className={this.props.className}
         style={Object.assign({}, this.props.style, {
           position: 'relative',
         })}
       >
+        {
+          connectDropTarget(<div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            display: this.state.dragging ? 'block' : 'none',
+            opacity: 0,
+            background: 'red',
+            zIndex: 3,
+          }} />)
+        }
+
         <div
           style={{
             width: '100%',
@@ -317,7 +338,7 @@ export default class SortableGridList extends React.Component {
           ref='container'
         >
           {sectionDisplayHeights.map((sectionDisplayHeight, sectionNumber) => {
-            console.log(`section-#${sectionNumber} height: ${sectionDisplayHeight}`);
+            // console.log(`section-#${sectionNumber} height: ${sectionDisplayHeight}`);
 
             return <div key={sectionNumber} style={{
               position: 'absolute',
@@ -326,21 +347,36 @@ export default class SortableGridList extends React.Component {
               width: '100%',
               transition: 'height 250ms, top 250ms',
               height: `${sectionDisplayHeight}${unit}`,
-              background: `rgba(255,0,0,${0.1 * (sectionNumber+1)})`,
+              background: Color(theme.bgColor).rotate(180 - 60*PHI*sectionNumber).darken(0.1+sectionNumber%2*0.1).desaturate(0.3).rgbString(),
             }} />
           })}
 
           {React.Children.map(this.props.children, (child) => {
-            console.log(layout.toJS(), child.key);
+            // console.log(layout.toJS(), child.key);
             let layoutPos = getLayoutPosition({layout, child});
             let pos = idxToScreenPosition(layoutPos.idx);
             pos.y += sectionTops.get(layoutPos.section);
             return (
               <DraggableItem
                 key={child.key}
+                locked={!!child.props.locked}
                 childKey={child.key}
+                onBeginDrag={() => {
+                  this.setState({
+                    dragging: true,
+                    draggingChildKey: child.key,
+                  });
+                }}
+                onEndDrag={() => {
+                  this.props.onLayoutChanged(this.state.layout || this.props.layout);
+                  this.setState({
+                    layout: null,
+                    dragging: false,
+                    draggingChildKey: null,
+                  });
+                }}
                 style={Object.assign({}, getStyleForPosition(pos), {
-                  zIndex: 1,
+                  zIndex: this.state.draggingChildKey === child.key ? 4 : 1,
                 })}
               >
                 {child}
