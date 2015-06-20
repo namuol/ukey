@@ -13,12 +13,19 @@ import createFretboard from './createFretboard';
 const APPEAR = Style.registerKeyframes({
   from: {
     transform: 'scale(0)',
-    opacity: 0,
+    // opacity: 0,
   },
   to: {
     transform: 'scale(1)',
-    opacity: 1,
+    // opacity: 1,
   },
+});
+
+const APPEAR_THEN_DISAPPEAR = Style.registerKeyframes({
+  '0%': {transform: 'scale(0)'},
+  '10%': {transform: 'scale(1)'},
+  '90%': {transform: 'scale(1)'},
+  '100%': {transform: 'scale(0)'},
 });
 
 const DISAPPEAR = Style.registerKeyframes({
@@ -129,17 +136,17 @@ const NOTE = Style.registerStyle({
   transition: 'all 450ms',
 });
 
-const deleteButtonWidth = 6;
+const badgeWidth = 6;
 
-const DELETE_BUTTON_BASE = Style.registerStyle({
-  width: `${deleteButtonWidth}vmin`,
-  height: `${deleteButtonWidth}vmin`,
+const BADGE_BASE = Style.registerStyle({
+  width: `${badgeWidth}vmin`,
+  height: `${badgeWidth}vmin`,
   borderRadius: '50%',
   background: '#e66',
   color: 'white',
   position: 'absolute',
-  top: `-${deleteButtonWidth/2 - 0.5}vmin`,
-  left: `-${deleteButtonWidth/2 - 0.5}vmin`,
+  top: `-${badgeWidth/2 - 1}vmin`,
+  left: `-${badgeWidth/2 - 1}vmin`,
   textAlign: 'center',
   display: 'flex',
   justifyContent: 'center',
@@ -148,32 +155,45 @@ const DELETE_BUTTON_BASE = Style.registerStyle({
   fontWeight: 700,
   fontSize: '4vmin',
   border: '0.7vmin solid white',
-  opacity: 0,
+  transition: 'transform 200ms',
 });
 
-const DELETE_BUTTON = Style.registerStyle(DELETE_BUTTON_BASE.style, {
-  animationName: APPEAR.name,
-  animationDuration: '200ms',
+const DELETE_BUTTON = Style.registerStyle(BADGE_BASE.style, {
+  // animationName: APPEAR.name,
+  // animationDuration: '200ms',
+  transform: 'scale(1)',
+});
+
+const DELETE_BUTTON_HIDDEN = Style.registerStyle(BADGE_BASE.style, {
+  // animationName: DISAPPEAR.name,
+  // animationDuration: '200ms',
+  transform: 'scale(0)',
+});
+
+const VARIATION_BADGE = Style.registerStyle(BADGE_BASE.style, {
+  left: 'initial',
+  right: `-${badgeWidth/2 - 1}vmin`,
+  background: theme.highlight,
+  color: 'white',
   opacity: 1,
+  transform: 'scale(1)',
 });
 
-const DELETE_BUTTON_HIDDEN = Style.registerStyle(DELETE_BUTTON_BASE.style, {
-  animationName: DISAPPEAR.name,
-  animationDuration: '200ms',
-  opacity: 0,
+const VARIATION_BADGE_HIDDEN = Style.registerStyle(VARIATION_BADGE.style, {
+  transform: 'scale(0)',
 });
 
 const ChordCard = React.createClass({
   getDefaultProps: function () {
     const fretboard = createFretboard({
       tuning: ['G','C','E','A'],
-      fretCount: 5,
-      fretWindow: 5,
+      fretCount: 8,
     });
 
     return {
       chord: 'C',
       fretboard: fretboard,
+      fretWindow: 5,
       transpose: 0,
     };
   },
@@ -181,6 +201,7 @@ const ChordCard = React.createClass({
   getInitialState: function () {
     return {
       deleted: false,
+      variationBadgeVisible: false,
     };
   },
 
@@ -191,6 +212,25 @@ const ChordCard = React.createClass({
   //     return true;
   //   }
   // },
+
+  _onClick: function _onClick (e) {
+    clearTimeout(this.state.variationBadgeTimeout);
+    
+    const variationBadgeTimeout = setTimeout(() => {
+      this.setState({
+        variationBadgeVisible: false,
+      });
+    }, 2000);
+
+    this.setState({
+      variationBadgeVisible: true,
+      variationBadgeTimeout: variationBadgeTimeout,
+    });
+
+    if (typeof this.props.onClick === 'function') {
+      this.props.onClick(e);
+    }
+  },
 
   getCardSVG: function (fingerings) {
     const stringCount = fingerings.size;
@@ -270,10 +310,14 @@ const ChordCard = React.createClass({
       hovering,
       inactive,
       canDelete,
+      fretWindow,
+      fretboard,
+      transpose,
     } = this.props;
 
     let {
       deleted,
+      variationBadgeVisible,
     } = this.state;
 
     let fingerings, cardSVG, chordName, variations;
@@ -284,9 +328,11 @@ const ChordCard = React.createClass({
       chordName = teoria.chord(this.props.chord).name;
       variations = getFingeringsFromChord({
         chord: chordName,
-        fretboard: this.props.fretboard,
-        transpose: this.props.transpose,
+        fretboard,
+        fretWindow,
+        transpose,
       });
+      console.log(chordName, variations.toJS());
       variation = (variation || 0) % variations.size;
       fingerings = variations.get(variation);
       cardSVG = this.getCardSVG(fingerings);
@@ -307,22 +353,24 @@ const ChordCard = React.createClass({
     }
 
     let DELETE_BUTTON_className;
-
     if (canDelete) {
       DELETE_BUTTON_className = DELETE_BUTTON.className;
     } else {
       DELETE_BUTTON_className = DELETE_BUTTON_HIDDEN.className;
     }
 
+    let VARIATION_BADGE_className;
+    if (variationBadgeVisible) {
+      VARIATION_BADGE_className = VARIATION_BADGE.className;
+    } else {
+      VARIATION_BADGE_className = VARIATION_BADGE_HIDDEN.className;
+    }
+
     return (
       <div className={WRAPPER_className} style={this.props.style}>
-        <div className={STYLE.className} style={style} onClick={(e) => {
-          if (typeof this.props.onClick === 'function') {
-            this.props.onClick(e);
-          }
-        }}>
+        <div className={STYLE.className} style={style} onClick={this._onClick}>
           <div className={LABEL.className}>
-            {chordName + (variation ? `(${variation+1})` : '')}
+            {chordName}
           </div>
           {cardSVG}
         </div>
@@ -337,6 +385,12 @@ const ChordCard = React.createClass({
             deleted: true,
           });
         }}>⨯</div>}
+
+        {
+          <div className={VARIATION_BADGE_className} onClick={this._onClick}>
+            {variation + 1}
+          </div>
+        }
       </div>
     );
   }

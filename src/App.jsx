@@ -197,18 +197,27 @@ function preventDefault (e) {
   e.preventDefault();
 }
 
+function addChordsToLayout ({chords, layout}) {
+  const secondToLastSection = layout.get(layout.size-2).push(...getChordInputIDs(chords).toJS());
+  return layout.set(layout.size-2, secondToLastSection);
+}
+
 let App = React.createClass({
   getDefaultProps: function () {
     const chordText = 'C G Am F';
-    const chordInputs = getChordInputsFromChordText({chordText});
-    const chordInputIDs = getChordInputIDs(chordInputs);
+    const chords = getChordInputsFromChordText({chordText});
+    const layout = addChordsToLayout({
+      layout: Immutable.fromJS([[]]),
+      chords,
+    });
+
     return {
-      chordText: chordText,
+      chordText: '',
       transpose: 0,
-      chords: Immutable.List(),
-      chordInputs: chordInputs,
+      chords: chords,
+      chordInputs: Immutable.List(),
       chordVariations: Immutable.Map(),
-      layout: processLayout({layout: Immutable.fromJS([[]])}),
+      layout: processLayout({layout}),
       editing: false,
     };
   },
@@ -231,50 +240,88 @@ let App = React.createClass({
     const {
       chordInputs,
       chordVariations,
+      chords,
       editing,
+      chordBeingEdited,
     } = this.state;
 
     let layout = this.state.layout;
     // console.log('layout', layout && layout.toJS());
 
     if (chordInputs.size > 0) {
-      const secondToLastSection = layout.get(layout.size-2).push(...getChordInputIDs(chordInputs).toJS());
-      layout = layout.set(layout.size-2, secondToLastSection);
+      layout = addChordsToLayout({chords: chordInputs, layout});
+    }
+
+    let chordTextInput;
+    let onSubmit;
+
+    if (editing && !!chordBeingEdited) {
+      chordTextInput = (
+        <input className={CHORD_TEXT_INPUT.className}
+          type="text"
+          ref="chordText"
+          value={this.state.chordText}
+          spellCheck={false}
+          onChange={(e) => {
+            const chordText = e.target.value;
+            let chord = chords.find(c => c.id === chordBeingEdited);
+            chord.text = chordText;
+            this.setState({
+              chordText: chordText,
+            });
+          }}
+        />
+      );
+    
+      onSubmit = (e) => {
+        e.preventDefault();
+        this.setState({
+          chordText: '',
+          chordBeingEdited: null,
+        });
+      }
+
+    } else {
+      chordTextInput = (
+        <input className={CHORD_TEXT_INPUT.className}
+          type="text"
+          ref="chordText"
+          value={this.state.chordText}
+          spellCheck={false}
+          onChange={(e) => {
+            const chordText = e.target.value;
+            const chordInputs = getChordInputsFromChordText({chordText, chordInputs: this.state.chordInputs});
+            const chordInputIDs = getChordInputIDs(chordInputs);
+            this.setState({
+              chordText: chordText,
+              chordInputs: chordInputs,
+            });
+          }}
+        />
+      );
+
+      onSubmit = (e) => {
+        e.preventDefault();
+        const chordInputIDs = getChordInputIDs(chordInputs);
+        // const layout = this.state.layout;
+        // const secondToLastSection = layout.get(layout.size-2).push(...(chordInputIDs.toJS()));
+        // const newLayout = layout.set(layout.size-2, secondToLastSection);
+        this.setState({
+          chords: this.state.chords.push(...(chordInputs.toJS())),
+          layout: processLayout({layout}),
+          chordText: '',
+          chordInputs: Immutable.List(),
+        });
+      };
     }
     
     return (
       <div className={WRAPPER.className}>
         <div className={STYLE.className}>
           <form className={TOP_BAR.className}
-            onSubmit={(e) => {
-              e.preventDefault();
-              const chordInputIDs = getChordInputIDs(chordInputs);
-              // const layout = this.state.layout;
-              // const secondToLastSection = layout.get(layout.size-2).push(...(chordInputIDs.toJS()));
-              // const newLayout = layout.set(layout.size-2, secondToLastSection);
-              this.setState({
-                chords: this.state.chords.push(...(chordInputs.toJS())),
-                layout: processLayout({layout: layout}),
-                chordText: '',
-                chordInputs: Immutable.List(),
-              });
-            }}
+            onSubmit={onSubmit}
           >
-            <input className={CHORD_TEXT_INPUT.className}
-              type="text"
-              value={this.state.chordText}
-              spellCheck={false}
-              onChange={(e) => {
-                const chordText = e.target.value;
-                const chordInputs = getChordInputsFromChordText({chordText, chordInputs: this.state.chordInputs});
-                const chordInputIDs = getChordInputIDs(chordInputs);
-                this.setState({
-                  chordText: chordText,
-                  chordInputs: chordInputs,
-                });
-              }}
-            />
-            
+            {chordTextInput}
             <div className={TRANSPOSE_INDICATOR.className}>
               {`+${this.state.transpose}`}
             </div>
@@ -294,6 +341,9 @@ let App = React.createClass({
             <div className={EDIT_BUTTON.className} onClick={(e) => {
               this.setState({
                 editing: !editing,
+                chordBeingEdited: null,
+                chordText: '',
+                chordInputs: Immutable.List(),
               });
             }}>{editing ? 'Done' : 'Edit'}</div>
 
@@ -325,10 +375,14 @@ let App = React.createClass({
                   locked = true;
                   if (idx < this.state.chords.size) {
                     inactive = true;
-                    // style = INACTIVE_CARD.style;
                   } else {
                     hovering = true;
-                    // style = EDITING_CARD.style;
+                  }
+                } else if (editing && !!chordBeingEdited) {
+                  if (chord.id === chordBeingEdited) {
+                    hovering = true;
+                  } else {
+                    inactive = true;
                   }
                 }
                 return <ChordCard
@@ -337,21 +391,28 @@ let App = React.createClass({
                   hovering={hovering}
                   inactive={inactive}
                   chord={chord.text}
-                  canDelete={editing && !hovering}
+                  canDelete={editing && !hovering && !chordBeingEdited}
                   onDelete={() => {
                     this.deleteChord(chord.id);
                   }}
                   variation={chordVariations.get(chord.id)}
                   onClick={() => {
                     if (editing) {
-                    } else {
-                      console.log('variation changed...', this.state);
                       this.setState({
-                        chordVariations: chordVariations.set(chord.id, chordVariations.get(chord.id) + 1),
+                        chordBeingEdited: chord.id,
+                        chordText: chord.text,
+                      });
+                      React.findDOMNode(this.refs.chordText).focus();
+
+                    } else {
+                      console.log('variation changed...', (chordVariations.get(chord.id)||0) + 1);
+                      this.setState({
+                        chordVariations: chordVariations.set(chord.id, ((chordVariations.get(chord.id)||0) + 1)%16),
                       });
                     }
                   }}
                   fretboard={fretboard}
+                  fretWindow={5}
                   transpose={parseInt(this.state.transpose)}
                   style={style}
                 />;
