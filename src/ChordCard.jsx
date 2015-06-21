@@ -39,16 +39,18 @@ const DISAPPEAR = Style.registerKeyframes({
   },
 });
 
-const HOVER_APPEAR = Style.registerKeyframes({
-  from: {
-    transform: 'scale(0) translateY(-1vmin)',
-    opacity: 0,
-  },
-  to: {
-    transform: 'scale(1) translateY(-1vmin)',
-    opacity: 1,
-  },
-});
+const shakeAmount = 1;
+const shakeSteps = 4;
+const shakeTranslateAmount = 1;
+const shakeRotateAmount = 25;
+const shakeKeyframes = Immutable.Range(0, shakeSteps+1).reduce((result, stepNumber) => {
+  const modifier = (stepNumber % 2 ? -1 : 1) * shakeAmount * (1-(stepNumber / shakeSteps));
+  return result.set(`${(stepNumber/shakeSteps) * 100}%`, {
+    transform: `perspective(100vmin) translateX(${modifier * shakeTranslateAmount}vmin) rotateY(${modifier * shakeRotateAmount}deg)`,
+  });
+}, Immutable.OrderedMap()).toJS();
+console.log('shakeKeyframes',shakeKeyframes);
+const SHAKE = Style.registerKeyframes(shakeKeyframes);
 
 const WRAPPER = Style.registerStyle({
   flexShrink: 0,
@@ -61,8 +63,12 @@ const WRAPPER = Style.registerStyle({
   borderRadius: '1vmin',
   background: 'white',
   transition: 'box-shadow 200ms, transform 200ms',
+  transitionTimingFunction: 'cubic-bezier(0.680, -0.550, 0.265, 1.550)',
   position: 'relative',
   overflow: 'visible',
+  perspective: '100vmin',
+  // transformOrigin: '50% 50% 0',
+  // transform: 'rotateY(60deg)'
 });
 
 const WRAPPER_SELECTED = Style.registerStyle(WRAPPER.style, {
@@ -70,10 +76,14 @@ const WRAPPER_SELECTED = Style.registerStyle(WRAPPER.style, {
 });
 
 const WRAPPER_HOVERING = Style.registerStyle(WRAPPER.style, {
-  animationName: HOVER_APPEAR.name,
-  animationDuration: '100ms',
   boxShadow: '0 1vmin 3vmin rgba(0,0,0,0.3)',
   transform: 'translateY(-1vmin)',
+});
+
+const shakeAnimationDuration = 300;
+const WRAPPER_SHAKING = Style.registerStyle(WRAPPER.style, {
+  animationName: SHAKE.name,
+  animationDuration: `${shakeAnimationDuration}ms`,
 });
 
 const deleteAnimationDuration = 150;
@@ -156,6 +166,7 @@ const BADGE_BASE = Style.registerStyle({
   fontSize: '4vmin',
   border: '0.7vmin solid white',
   transition: 'transform 200ms',
+  transitionTimingFunction: 'cubic-bezier(0.680, -0.550, 0.265, 1.550)',
 });
 
 const DELETE_BUTTON = Style.registerStyle(BADGE_BASE.style, {
@@ -205,28 +216,32 @@ const ChordCard = React.createClass({
     };
   },
 
-  // shouldComponentUpdate: function (newProps, newState) {
-  //   try {
-  //     return teoria.chord(this.props.chord).name !== teoria.chord(newProps.chord).name;
-  //   } catch (e) {
-  //     return true;
-  //   }
-  // },
+  componentWillReceiveProps: function (newProps) {
+    if (newProps.variation !== this.props.variation) {
+      this.showVariationBadge();
+    }
+  },
 
-  _onClick: function _onClick (e) {
+  shouldComponentUpdate: function (newProps, newState) {
+    return !Immutable.is(newState, this.state) || !Immutable.is(newProps, this.props);
+  },
+
+  showVariationBadge: function () {
     clearTimeout(this.state.variationBadgeTimeout);
     
     const variationBadgeTimeout = setTimeout(() => {
       this.setState({
         variationBadgeVisible: false,
       });
-    }, 2000);
+    }, 1000);
 
     this.setState({
       variationBadgeVisible: true,
       variationBadgeTimeout: variationBadgeTimeout,
     });
+  },
 
+  _onClick: function _onClick (e) {
     if (typeof this.props.onClick === 'function') {
       this.props.onClick(e);
     }
@@ -332,7 +347,6 @@ const ChordCard = React.createClass({
         fretWindow,
         transpose,
       });
-      console.log(chordName, variations.toJS());
       variation = (variation || 0) % variations.size;
       fingerings = variations.get(variation);
       cardSVG = this.getCardSVG(fingerings);
@@ -353,7 +367,7 @@ const ChordCard = React.createClass({
     }
 
     let DELETE_BUTTON_className;
-    if (canDelete) {
+    if (canDelete && !deleted) {
       DELETE_BUTTON_className = DELETE_BUTTON.className;
     } else {
       DELETE_BUTTON_className = DELETE_BUTTON_HIDDEN.className;
@@ -362,6 +376,9 @@ const ChordCard = React.createClass({
     let VARIATION_BADGE_className;
     if (variationBadgeVisible) {
       VARIATION_BADGE_className = VARIATION_BADGE.className;
+      if (variations.size < 2) {
+        WRAPPER_className = WRAPPER_SHAKING.className;
+      }
     } else {
       VARIATION_BADGE_className = VARIATION_BADGE_HIDDEN.className;
     }
@@ -388,7 +405,7 @@ const ChordCard = React.createClass({
 
         {
           <div className={VARIATION_BADGE_className} onClick={this._onClick}>
-            {variation + 1}
+            {(variation||0) + 1}
           </div>
         }
       </div>

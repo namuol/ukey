@@ -61,6 +61,9 @@ const TOP_BAR = Style.registerStyle({
   zIndex: 3,
   height: `${topBarHeight}vmin`,
   top: 0,
+
+  // HACK: Why do I have to do this?
+  transform: 'translate3d(0,0,0)',
 });
 
 const CHORD_TEXT_INPUT = Style.registerStyle({
@@ -73,7 +76,10 @@ const CHORD_TEXT_INPUT = Style.registerStyle({
   flexGrow: 8,
   fontWeight: 700,
   height: '100%',
-  // textAlign: 'center',
+  cursor: 'pointer',
+  marginLeft: `${theme.mainPadding}vmin`,
+  transition: 'width 250ms, flex-grow 250ms',
+  textAlign: 'center',
 });
 
 const TRANSPOSE_INPUT = Style.registerStyle({
@@ -107,7 +113,7 @@ const TRANSPOSE_INDICATOR = Style.registerStyle({
   alignItems: 'center',
   // alignContent: 'center',
   whiteSpace: 'nowrap',
-  width: '10vmin',
+  width: '8vmin',
   flexShrink: 0,
   padding: 0,
 });
@@ -119,13 +125,15 @@ const BUTTON = Style.registerStyle({
   outline: 'none',
   borderRadius: '1vmin',
   padding: '1.5vmin 2vmin',
-  fontWeight: 700,
-  color: 'white',
+  fontWeight: 400,
+  // color: 'white',
+  color: theme.highlight,
   flexGrow: 1,
   flexShrink: 0,
   height: '100%',
   marginLeft: `${theme.mainPadding}vmin`,
-  backgroundColor: theme.highlight,
+  // backgroundColor: theme.highlight,
+  backgroundColor: 'transparent',
   cursor: 'pointer',
   textAlign: 'center',
   minWidth: '14vmin',
@@ -137,7 +145,10 @@ const BUTTON = Style.registerStyle({
 });
 
 let EDIT_BUTTON = Style.registerStyle(BUTTON.style, {
-  width: '20vmin',
+  minWidth: '24vmin',
+  flexGrow: 0,
+  flexShrink: 0,
+  marginLeft: 0,
 });
 
 const LABEL = Style.registerStyle({
@@ -174,9 +185,14 @@ const INACTIVE_CARD = Style.registerStyle({
   opacity: 0.8,
 });
 
+const minSectionCount = 6;
+
 function processLayout ({layout}) {
   // Filter empty sections:
-  return layout.filter(section => section.size > 0).push(Immutable.List());
+  const filteredLayout = layout.filter(section => section.size > 0);
+  // return filteredLayout.push(Immutable.List());
+  const empties = Immutable.Range(0, Math.max(1, minSectionCount - filteredLayout.size)).toJS().map(c => Immutable.List());
+  return filteredLayout.push(...empties);
 }
 
 function getChordInputsFromChordText ({chordText, chordInputs=Immutable.List()}) {
@@ -198,13 +214,14 @@ function preventDefault (e) {
 }
 
 function addChordsToLayout ({chords, layout}) {
-  const secondToLastSection = layout.get(layout.size-2).push(...getChordInputIDs(chords).toJS());
-  return layout.set(layout.size-2, secondToLastSection);
+  let lastNonEmptySlot = Math.max(0, layout.findLastIndex(section => section.size > 0));
+  const secondToLastSection = layout.get(lastNonEmptySlot).push(...getChordInputIDs(chords).toJS());
+  return layout.set(lastNonEmptySlot, secondToLastSection);
 }
 
 let App = React.createClass({
   getDefaultProps: function () {
-    const chordText = 'C G Am F';
+    const chordText = 'C G Am F D';
     const chords = getChordInputsFromChordText({chordText});
     const layout = addChordsToLayout({
       layout: Immutable.fromJS([[]]),
@@ -230,63 +247,129 @@ let App = React.createClass({
     let chordIdx;
     const sectionIdx = this.state.layout.findIndex(section => (chordIdx = section.indexOf(chordID)) >= 0);
     const layout = this.state.layout.set(sectionIdx, this.state.layout.get(sectionIdx).splice(chordIdx, 1));
+    const newChords = this.state.chords.splice(this.state.chords.findIndex(c => c.id === chordID), 1);
+
     this.setState({
       layout: processLayout({layout}),
-      chords: this.state.chords.splice(this.state.chords.findIndex(c => c.id === chordID), 1),
-    })
+      chords: newChords,
+      editing: newChords.size > 0 ? this.state.editing : false,
+    });
   },
 
-  render: function () {
+  renderTopBar_editing: function () {
     const {
       chordInputs,
       chordVariations,
       chords,
       editing,
       chordBeingEdited,
+      transpose,
     } = this.state;
+    console.log('chordBeingEdited', chordBeingEdited);
 
-    let layout = this.state.layout;
-    // console.log('layout', layout && layout.toJS());
+    return (
+      <form className={TOP_BAR.className}
+        onSubmit={(e) => {
+          e.preventDefault();
+          this.setState({
+            chordText: '',
+            chordBeingEdited: null,
+          });
+        }}
+      >
+        <div className={EDIT_BUTTON.className} style={{
+          fontWeight: 700,
+        }} onClick={(e) => {
+          e.stopPropagation();
 
-    if (chordInputs.size > 0) {
-      layout = addChordsToLayout({chords: chordInputs, layout});
-    }
+          this.setState({
+            editing: false,
+            chordBeingEdited: null,
+            chordText: '',
+            chordInputs: Immutable.List(),
+          });
+        }}>
+          Done
+        </div>
 
-    let chordTextInput;
-    let onSubmit;
+        {!!chordBeingEdited &&
+          <input className={CHORD_TEXT_INPUT.className}
+            key={'chord text editor'}
+            type="text"
+            ref="chordText"
+            value={this.state.chordText}
+            spellCheck={false}
+            onClick={e => e.stopPropagation()}
+            autoFocus={true}
+            onChange={(e) => {
+              const chordText = e.target.value;
+              let chord = chords.find(c => c.id === chordBeingEdited);
+              chord.text = chordText;
+              this.setState({
+                chordText: chordText,
+              });
+            }}
+          />
+        }
 
-    if (editing && !!chordBeingEdited) {
-      chordTextInput = (
-        <input className={CHORD_TEXT_INPUT.className}
-          type="text"
-          ref="chordText"
-          value={this.state.chordText}
-          spellCheck={false}
-          onChange={(e) => {
-            const chordText = e.target.value;
-            let chord = chords.find(c => c.id === chordBeingEdited);
-            chord.text = chordText;
+        {!chordBeingEdited &&
+          <div className={EDIT_BUTTON.className} style={{
+            marginLeft: BUTTON.style['margin-left'],
+          }} onClick={(e) => {
+            e.stopPropagation();
+
             this.setState({
-              chordText: chordText,
+              editing: false,
+              adding: true,
+            }, () => {
+              React.findDOMNode(this.refs.chordText).focus();
             });
-          }}
-        />
-      );
-    
-      onSubmit = (e) => {
-        e.preventDefault();
-        this.setState({
-          chordText: '',
-          chordBeingEdited: null,
-        });
-      }
+          }}>
+            Add
+          </div>
+        }
+        
+        <input type="submit" style={{height: 0, padding: 0, margin: 0, position: 'absolute', visibility: 'hidden'}} />
+      </form>
+    );
+  },
 
-    } else {
-      chordTextInput = (
+  renderTopBar_adding: function ({layout}) {
+    const {
+      chordInputs,
+      chords,
+    } = this.state;
+    return (
+      <form className={TOP_BAR.className}
+        onSubmit={(e) => {
+          e.preventDefault();
+          const chordInputIDs = getChordInputIDs(chordInputs);
+          this.setState({
+            chords: this.state.chords.push(...(chordInputs.toJS())),
+            layout: processLayout({layout}),
+            chordText: '',
+            chordInputs: Immutable.List(),
+            adding: false,
+          });
+        }}
+      >
+        <div className={EDIT_BUTTON.className} onClick={(e) => {
+          e.stopPropagation();
+        
+          this.setState({
+            adding: false,
+            chordText: '',
+            chordInputs: Immutable.List(),
+          });
+        }}>
+          Cancel
+        </div>
+
         <input className={CHORD_TEXT_INPUT.className}
           type="text"
           ref="chordText"
           value={this.state.chordText}
+          autoFocus={true}
           spellCheck={false}
           onChange={(e) => {
             const chordText = e.target.value;
@@ -298,57 +381,138 @@ let App = React.createClass({
             });
           }}
         />
-      );
 
-      onSubmit = (e) => {
-        e.preventDefault();
-        const chordInputIDs = getChordInputIDs(chordInputs);
-        // const layout = this.state.layout;
-        // const secondToLastSection = layout.get(layout.size-2).push(...(chordInputIDs.toJS()));
-        // const newLayout = layout.set(layout.size-2, secondToLastSection);
-        this.setState({
-          chords: this.state.chords.push(...(chordInputs.toJS())),
-          layout: processLayout({layout}),
-          chordText: '',
-          chordInputs: Immutable.List(),
-        });
-      };
-    }
+        <input type="submit" value="Done" className={EDIT_BUTTON.className} style={{
+          marginLeft: BUTTON.style['margin-left'],
+          fontWeight: 700,
+        }} onClick={(e) => {
+          e.stopPropagation();
+        }}/>
+      </form>
+    );
+  },
+
+  renderTopBar_default: function ({layout}) {
+    const {
+      chordInputs,
+      chordVariations,
+      chords,
+      editing,
+      chordBeingEdited,
+      transpose,
+    } = this.state;
     
+    const hiddenIfThereAreNoChords = {
+      visibility: chords.size > 0 ? 'visible' : 'hidden',
+    };
+
     return (
-      <div className={WRAPPER.className}>
+      <form className={TOP_BAR.className}>
+        <div className={EDIT_BUTTON.className}
+          style={hiddenIfThereAreNoChords}
+          onClick={(e) => {
+            this.setState({
+              editing: true,
+              chordBeingEdited: null,
+              chordText: '',
+              chordInputs: Immutable.List(),
+              adding: false,
+            });
+          }}
+        >
+          Edit
+        </div>
+
+        {/*
+        <div className={BUTTON.className} onClick={(e) => {
+          this.setState({
+            transpose: mod(transpose-1, 12),
+          });
+        }}>▼</div>
+
+        <div className={TRANSPOSE_INDICATOR.className}>
+          {`+${transpose}`}
+        </div>
+
+        <div className={BUTTON.className} onClick={(e) => {
+          this.setState({
+            transpose: mod(transpose+1, 12),
+          });
+        }}>▲</div>
+        */}
+
+        <div className={BUTTON.className}
+          style={hiddenIfThereAreNoChords}
+          onClick={(e) => {
+            e.stopPropagation();
+
+            this.setState({
+              transposing: true,
+            });
+          }}
+        >
+          Transpose
+        </div>
+
+        <div className={EDIT_BUTTON.className} style={{
+          marginLeft: BUTTON.style['margin-left'],
+          fontWeight: 700,
+        }} onClick={(e) => {
+          e.stopPropagation();
+
+          this.setState({
+            editing: false,
+            adding: true,
+          }, () => {
+            React.findDOMNode(this.refs.chordText).focus();
+          });
+        }}>
+          Add
+        </div>
+
+        <input type="submit" style={{height: 0, padding: 0, margin: 0, position: 'absolute', visibility: 'hidden'}} />
+      </form>
+    );
+  },
+
+  render: function () {
+    const {
+      chordInputs,
+      chordVariations,
+      chords,
+      editing,
+      adding,
+      chordBeingEdited,
+    } = this.state;
+
+    let {
+      layout,
+    } = this.state;
+
+    if (chordInputs.size > 0) {
+      layout = addChordsToLayout({chords: chordInputs, layout});
+    }
+
+    let topBar;
+    
+    if (adding) {
+      topBar = this.renderTopBar_adding({layout});
+    } else if (editing) {
+      topBar = this.renderTopBar_editing({layout});
+    } else {
+      topBar = this.renderTopBar_default({layout});
+    }
+
+    return (
+      <div className={WRAPPER.className} onClick={() => {
+        if (editing && chordBeingEdited) {
+          this.setState({
+            chordBeingEdited: null,
+          });
+        }
+      }}>
         <div className={STYLE.className}>
-          <form className={TOP_BAR.className}
-            onSubmit={onSubmit}
-          >
-            {chordTextInput}
-            <div className={TRANSPOSE_INDICATOR.className}>
-              {`+${this.state.transpose}`}
-            </div>
-
-            <div className={BUTTON.className} onClick={(e) => {
-              this.setState({
-                transpose: mod(this.state.transpose-1, 12),
-              });
-            }}>▼</div>
-
-            <div className={BUTTON.className} onClick={(e) => {
-              this.setState({
-                transpose: mod(this.state.transpose+1, 12),
-              });
-            }}>▲</div>
-
-            <div className={EDIT_BUTTON.className} onClick={(e) => {
-              this.setState({
-                editing: !editing,
-                chordBeingEdited: null,
-                chordText: '',
-                chordInputs: Immutable.List(),
-              });
-            }}>{editing ? 'Done' : 'Edit'}</div>
-
-            <input type="submit" style={{height: 0, padding: 0, margin: 0, position: 'absolute', visibility: 'hidden'}} />
-          </form>
+          {topBar}
 
           <div className={CHORD_OUTPUT.className}>
             <SortableGridList
@@ -396,16 +560,17 @@ let App = React.createClass({
                     this.deleteChord(chord.id);
                   }}
                   variation={chordVariations.get(chord.id)}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
+
                     if (editing) {
                       this.setState({
                         chordBeingEdited: chord.id,
                         chordText: chord.text,
+                      }, () => {
+                        React.findDOMNode(this.refs.chordText).focus();
                       });
-                      React.findDOMNode(this.refs.chordText).focus();
-
                     } else {
-                      console.log('variation changed...', (chordVariations.get(chord.id)||0) + 1);
                       this.setState({
                         chordVariations: chordVariations.set(chord.id, ((chordVariations.get(chord.id)||0) + 1)%16),
                       });
