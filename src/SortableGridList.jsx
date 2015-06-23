@@ -17,6 +17,7 @@ import DropSpot from './DropSpot';
 
 import Color from 'color';
 import clamp from './clamp';
+import isFunc from './isFunc';
 
 const PHI = 1.61803398875;
 
@@ -338,17 +339,24 @@ export default class SortableGridList extends React.Component {
           ref='container'
         >
           {sectionDisplayHeights.map((sectionDisplayHeight, sectionNumber) => {
-            // console.log(`section-#${sectionNumber} height: ${sectionDisplayHeight}`);
-
-            return <div key={sectionNumber} style={{
-              position: 'absolute',
-              left: 0,
-              top: `${sectionTops.get(sectionNumber)}${unit}`,
-              width: '100%',
-              transition: 'height 250ms, top 250ms',
-              height: `${sectionDisplayHeight}${unit}`,
-              background: Color(theme.bgColor).rotate(180 - 60*PHI*sectionNumber).darken(0.1+sectionNumber%2*0.1).desaturate(0.3).rgbString(),
-            }} />
+            return <div key={sectionNumber}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: `${sectionTops.get(sectionNumber)}${unit}`,
+                width: '100%',
+                transition: 'height 250ms, top 250ms',
+                height: `${sectionDisplayHeight}${unit}`,
+                background: Color(theme.bgColor).rotate(180 - 60*PHI*sectionNumber).darken(0.1+sectionNumber%2*0.1).desaturate(0.3).rgbString(),
+                cursor: isFunc(this.props.onClickSection) ? 'pointer' : 'initial',
+                borderBottom: `0.3vmin solid ${Color(theme.dark).clearer(0.8).rgbString()}`,
+              }}
+              onClick={() => {
+                if (isFunc(this.props.onClickSection)) {
+                  this.props.onClickSection(sectionNumber);
+                }
+              }}
+            />
           })}
 
           {React.Children.map(this.props.children, (child) => {

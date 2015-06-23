@@ -1,5 +1,6 @@
 import React, {PropTypes} from 'react';
 import {DragSource} from 'react-dnd';
+import isFunc from './isFunc';
 
 function collect (connect, monitor) {
   return {
@@ -14,7 +15,7 @@ const itemSource = {
   },
 
   beginDrag (props) {
-    if (typeof props.onBeginDrag === 'function') {
+    if (isFunc(props.onBeginDrag)) {
       props.onBeginDrag(...arguments);
     }
 
@@ -22,7 +23,7 @@ const itemSource = {
   },
 
   endDrag (props) {
-    if (typeof props.onEndDrag === 'function') {
+    if (isFunc(props.onEndDrag)) {
       props.onEndDrag(...arguments);
     }
   }

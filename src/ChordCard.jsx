@@ -7,6 +7,8 @@ import Immutable from 'immutable';
 import getFingeringsFromChord from './getFingeringsFromChord';
 import createFretboard from './createFretboard';
 
+import isFunc from './isFunc';
+
 // let cardWidth = (100 - 2*theme.mainPadding)/6 - 2;
 // let cardHeight = 1.8*cardWidth;
 
@@ -49,7 +51,6 @@ const shakeKeyframes = Immutable.Range(0, shakeSteps+1).reduce((result, stepNumb
     transform: `perspective(100vmin) translateX(${modifier * shakeTranslateAmount}vmin) rotateY(${modifier * shakeRotateAmount}deg)`,
   });
 }, Immutable.OrderedMap()).toJS();
-console.log('shakeKeyframes',shakeKeyframes);
 const SHAKE = Style.registerKeyframes(shakeKeyframes);
 
 const WRAPPER = Style.registerStyle({
@@ -195,6 +196,7 @@ const VARIATION_BADGE_HIDDEN = Style.registerStyle(VARIATION_BADGE.style, {
 });
 
 const ChordCard = React.createClass({
+
   getDefaultProps: function () {
     const fretboard = createFretboard({
       tuning: ['G','C','E','A'],
@@ -242,7 +244,7 @@ const ChordCard = React.createClass({
   },
 
   _onClick: function _onClick (e) {
-    if (typeof this.props.onClick === 'function') {
+    if (isFunc(this.props.onClick)) {
       this.props.onClick(e);
     }
   },

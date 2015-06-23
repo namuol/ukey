@@ -19,13 +19,6 @@ import uuid from 'uuid';
 import clamp from './clamp';
 import mod from './mod';
 
-const WRAPPER = Style.registerStyle({
-  width: '100vmin',
-  minHeight: '100vh',
-  margin: 'auto',
-  backgroundColor: theme.bgColor,
-});
-
 const STYLE = Style.registerStyle({
   display: 'flex',
   flexDirection: 'column',
@@ -46,26 +39,6 @@ const BRAND_HEADER = Style.registerStyle({
   opacity: 0.5,
 });
 
-const topBarHeight = 15;
-
-const TOP_BAR = Style.registerStyle({
-  display: 'flex',
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  alignContent: 'center',
-  width: '100vmin',
-  padding: `${theme.mainPadding}vmin`,
-  position: 'fixed',
-  backgroundColor: Color(theme.bgColor).alpha(0.9).rgbString(),
-  zIndex: 3,
-  height: `${topBarHeight}vmin`,
-  top: 0,
-
-  // HACK: Why do I have to do this?
-  transform: 'translate3d(0,0,0)',
-});
-
 const CHORD_TEXT_INPUT = Style.registerStyle({
   fontFamily: theme.fontFamily,
   fontSize: '5vmin',
@@ -73,7 +46,8 @@ const CHORD_TEXT_INPUT = Style.registerStyle({
   outline: 'none',
   borderRadius: '1vmin',
   padding: '1.5vmin 2vmin',
-  flexGrow: 8,
+  flexGrow: 2,
+  width: '20vmin',
   fontWeight: 700,
   height: '100%',
   cursor: 'pointer',
@@ -82,70 +56,30 @@ const CHORD_TEXT_INPUT = Style.registerStyle({
   textAlign: 'center',
 });
 
-const TRANSPOSE_INPUT = Style.registerStyle({
-  fontFamily: theme.fontFamily,
-  fontSize: '4vmin',
-  border: 'none',
-  outline: 'none',
-  borderRadius: '1vmin',
-  padding: '1.5vmin 2vmin',
-  fontWeight: 700,
-  flexGrow: 1,
-  height: '100%',
-  marginLeft: `${theme.mainPadding}vmin`,
-  // textAlign: 'center',
+const TRANSPOSE_BUTTON = Style.registerStyle(theme.BUTTON.style, {
+  // backgroundColor: Color(theme.highlight).lighten(0.3).rgbString(),
+  // color: 'white',
+  fontSize: '8vmin',
+  width: '6vmin',
+  fontWeight: 400,
+  backgroundColor: 'rgba(0,0,0,0.1)',
 });
 
-const TRANSPOSE_INDICATOR = Style.registerStyle({
-  fontFamily: theme.fontFamily,
-  fontSize: '6vmin',
-  border: 'none',
-  outline: 'none',
-  borderRadius: '1vmin',
-  fontWeight: 700,
-  flexGrow: 1,
-  height: '100%',
-  marginLeft: `${theme.mainPadding}vmin`,
-  background: 'transparent',
-  display: 'flex',
-  // textAlign: 'center',
-  // justifyContent: 'center',
-  alignItems: 'center',
-  // alignContent: 'center',
-  whiteSpace: 'nowrap',
-  width: '8vmin',
-  flexShrink: 0,
+const TRANSPOSE_INDICATOR = Style.registerStyle(theme.BUTTON.style, {
+  color: 'rgba(0,0,0,0.7)',
+  cursor: 'initial',
   padding: 0,
 });
 
-const BUTTON = Style.registerStyle({
-  fontFamily: theme.fontFamily,
-  fontSize: '5vmin',
-  border: 'none',
-  outline: 'none',
-  borderRadius: '1vmin',
-  padding: '1.5vmin 2vmin',
-  fontWeight: 400,
-  // color: 'white',
-  color: theme.highlight,
-  flexGrow: 1,
+let EDIT_BUTTON = Style.registerStyle(theme.BUTTON.style, {
+  minWidth: '20vmin',
+  flexGrow: 0,
   flexShrink: 0,
-  height: '100%',
-  marginLeft: `${theme.mainPadding}vmin`,
-  // backgroundColor: theme.highlight,
-  backgroundColor: 'transparent',
-  cursor: 'pointer',
-  textAlign: 'center',
-  minWidth: '14vmin',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  alignContent: 'center',
-  textTransform: 'uppercase',
+  marginLeft: 0,
 });
 
-let EDIT_BUTTON = Style.registerStyle(BUTTON.style, {
-  minWidth: '24vmin',
+let BACK_BUTTON = Style.registerStyle(theme.BUTTON.style, {
+  minWidth: '12vmin',
   flexGrow: 0,
   flexShrink: 0,
   marginLeft: 0,
@@ -161,7 +95,8 @@ const LABEL = Style.registerStyle({
 
 const CHORD_OUTPUT = Style.registerStyle({
   width: '100%',
-  marginTop: `${topBarHeight}vmin`,
+  marginTop: `${theme.topBarHeight}vmin`,
+  marginBottom: `${theme.bottomBarHeight}vmin`,
 });
 
 const fretboard = createFretboard({
@@ -185,7 +120,7 @@ const INACTIVE_CARD = Style.registerStyle({
   opacity: 0.8,
 });
 
-const minSectionCount = 6;
+const minSectionCount = 4;
 
 function processLayout ({layout}) {
   // Filter empty sections:
@@ -196,13 +131,19 @@ function processLayout ({layout}) {
 }
 
 function getChordInputsFromChordText ({chordText, chordInputs=Immutable.List()}) {
-  return Immutable.List(chordText.split(/\s/).filter(c => c.length).map((chord, idx) => {
+  let filteredInputText = Immutable.List(chordText.split(/\s/).filter(c => c.length > 0));
+  
+  if (filteredInputText.size === 0) {
+    filteredInputText = filteredInputText.push('');
+  }
+
+  return filteredInputText.map((chord, idx) => {
     const existingChord = chordInputs.get(idx);
     return {
       id: existingChord ? existingChord.id : uuid.v4(),
       text: chord,
     };
-  }));
+  });
 }
 
 function getChordInputIDs (chordInputs) {
@@ -213,10 +154,13 @@ function preventDefault (e) {
   e.preventDefault();
 }
 
-function addChordsToLayout ({chords, layout}) {
-  let lastNonEmptySlot = Math.max(0, layout.findLastIndex(section => section.size > 0));
-  const secondToLastSection = layout.get(lastNonEmptySlot).push(...getChordInputIDs(chords).toJS());
-  return layout.set(lastNonEmptySlot, secondToLastSection);
+function findLastEmptySection (layout) {
+  return Math.max(0, layout.findLastIndex(section => section.size > 0));;
+}
+
+function addChordsToLayout ({chords, layout, sectionToAddTo=findLastEmptySection(layout)}) {
+  const secondToLastSection = layout.get(sectionToAddTo).push(...getChordInputIDs(chords).toJS());
+  return layout.set(sectionToAddTo, secondToLastSection);
 }
 
 let App = React.createClass({
@@ -265,10 +209,13 @@ let App = React.createClass({
       chordBeingEdited,
       transpose,
     } = this.state;
-    console.log('chordBeingEdited', chordBeingEdited);
+    
+    const hiddenIfThereAreNoChords = {
+      visibility: chords.size > 0 ? 'visible' : 'hidden',
+    };
 
     return (
-      <form className={TOP_BAR.className}
+      <form className={theme.BOTTOM_BAR.className}
         onSubmit={(e) => {
           e.preventDefault();
           this.setState({
@@ -313,20 +260,27 @@ let App = React.createClass({
         }
 
         {!chordBeingEdited &&
-          <div className={EDIT_BUTTON.className} style={{
-            marginLeft: BUTTON.style['margin-left'],
-          }} onClick={(e) => {
-            e.stopPropagation();
-
-            this.setState({
-              editing: false,
-              adding: true,
-            }, () => {
-              React.findDOMNode(this.refs.chordText).focus();
-            });
-          }}>
-            Add
+          <div className={TRANSPOSE_INDICATOR.className}
+            style={hiddenIfThereAreNoChords}
+          >
+            Transpose: +<span style={{width: '4vmin'}}>{transpose}</span>
           </div>
+        }
+
+        {!chordBeingEdited &&
+          <div className={TRANSPOSE_BUTTON.className} onClick={(e) => {
+            this.setState({
+              transpose: mod(transpose-1, 12),
+            });
+          }}>-</div>
+        }
+
+        {!chordBeingEdited &&
+          <div className={TRANSPOSE_BUTTON.className} onClick={(e) => {
+            this.setState({
+              transpose: mod(transpose+1, 12),
+            });
+          }}>+</div>
         }
         
         <input type="submit" style={{height: 0, padding: 0, margin: 0, position: 'absolute', visibility: 'hidden'}} />
@@ -339,13 +293,23 @@ let App = React.createClass({
       chordInputs,
       chords,
     } = this.state;
+
     return (
-      <form className={TOP_BAR.className}
+      <form className={theme.BOTTOM_BAR.className}
         onSubmit={(e) => {
           e.preventDefault();
-          const chordInputIDs = getChordInputIDs(chordInputs);
+
+          let chordsToAdd;
+          if (chordInputs.size === 1 && chordInputs.get(0).text.trim() === '') {
+            let toRemove = chordInputs.get(0);
+            chordsToAdd = Immutable.List();
+            layout = layout.map(section => section.filter(id => id !== toRemove.id));
+          } else {
+            chordsToAdd = chordInputs;
+          }
+
           this.setState({
-            chords: this.state.chords.push(...(chordInputs.toJS())),
+            chords: this.state.chords.push(...(chordsToAdd.toJS())),
             layout: processLayout({layout}),
             chordText: '',
             chordInputs: Immutable.List(),
@@ -374,7 +338,7 @@ let App = React.createClass({
           onChange={(e) => {
             const chordText = e.target.value;
             const chordInputs = getChordInputsFromChordText({chordText, chordInputs: this.state.chordInputs});
-            const chordInputIDs = getChordInputIDs(chordInputs);
+
             this.setState({
               chordText: chordText,
               chordInputs: chordInputs,
@@ -383,7 +347,7 @@ let App = React.createClass({
         />
 
         <input type="submit" value="Done" className={EDIT_BUTTON.className} style={{
-          marginLeft: BUTTON.style['margin-left'],
+          marginLeft: theme.BUTTON.style['margin-left'],
           fontWeight: 700,
         }} onClick={(e) => {
           e.stopPropagation();
@@ -407,7 +371,7 @@ let App = React.createClass({
     };
 
     return (
-      <form className={TOP_BAR.className}>
+      <form className={theme.BOTTOM_BAR.className}>
         <div className={EDIT_BUTTON.className}
           style={hiddenIfThereAreNoChords}
           onClick={(e) => {
@@ -423,46 +387,18 @@ let App = React.createClass({
           Edit
         </div>
 
-        {/*
-        <div className={BUTTON.className} onClick={(e) => {
-          this.setState({
-            transpose: mod(transpose-1, 12),
-          });
-        }}>▼</div>
-
-        <div className={TRANSPOSE_INDICATOR.className}>
-          {`+${transpose}`}
-        </div>
-
-        <div className={BUTTON.className} onClick={(e) => {
-          this.setState({
-            transpose: mod(transpose+1, 12),
-          });
-        }}>▲</div>
-        */}
-
-        <div className={BUTTON.className}
-          style={hiddenIfThereAreNoChords}
-          onClick={(e) => {
-            e.stopPropagation();
-
-            this.setState({
-              transposing: true,
-            });
-          }}
-        >
-          Transpose
-        </div>
-
         <div className={EDIT_BUTTON.className} style={{
-          marginLeft: BUTTON.style['margin-left'],
+          marginLeft: theme.BUTTON.style['margin-left'],
           fontWeight: 700,
         }} onClick={(e) => {
           e.stopPropagation();
-
+          const chordText = '';
           this.setState({
             editing: false,
             adding: true,
+            sectionToAddTo: null,
+            chordText,
+            chordInputs: getChordInputsFromChordText({chordText}),
           }, () => {
             React.findDOMNode(this.refs.chordText).focus();
           });
@@ -483,6 +419,7 @@ let App = React.createClass({
       editing,
       adding,
       chordBeingEdited,
+      sectionToAddTo,
     } = this.state;
 
     let {
@@ -490,21 +427,29 @@ let App = React.createClass({
     } = this.state;
 
     if (chordInputs.size > 0) {
-      layout = addChordsToLayout({chords: chordInputs, layout});
+      let params = {
+        chords: chordInputs,
+        layout,
+      };
+
+      if (typeof sectionToAddTo === 'number') {
+        params.sectionToAddTo = sectionToAddTo;
+      }
+      layout = addChordsToLayout(params);
     }
 
-    let topBar;
+    let bottomBar;
     
     if (adding) {
-      topBar = this.renderTopBar_adding({layout});
+      bottomBar = this.renderTopBar_adding({layout});
     } else if (editing) {
-      topBar = this.renderTopBar_editing({layout});
+      bottomBar = this.renderTopBar_editing({layout});
     } else {
-      topBar = this.renderTopBar_default({layout});
+      bottomBar = this.renderTopBar_default({layout});
     }
 
     return (
-      <div className={WRAPPER.className} onClick={() => {
+      <div className={theme.WRAPPER.className} onClick={() => {
         if (editing && chordBeingEdited) {
           this.setState({
             chordBeingEdited: null,
@@ -512,7 +457,15 @@ let App = React.createClass({
         }
       }}>
         <div className={STYLE.className}>
-          {topBar}
+          <div className={theme.TOP_BAR.className}>
+            <div className={BACK_BUTTON.className}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <strong>&lt;</strong>&nbsp;&nbsp;Songs
+            </div>
+          </div>
 
           <div className={CHORD_OUTPUT.className}>
             <SortableGridList
@@ -526,6 +479,17 @@ let App = React.createClass({
                   layout: processLayout({layout}),
                 });
               }}
+              onClickSection={!this.state.adding && !this.state.editing ? (sectionNumber) => {
+                const chordText = '';
+
+                this.setState({
+                  adding: true,
+                  editing: false,
+                  chordText,
+                  chordInputs: getChordInputsFromChordText({chordText, sectionToAddTo: sectionNumber}),
+                  sectionToAddTo: sectionNumber
+                });
+              } : null}
             >
               {this.state.chords.push(...(chordInputs.toJS())).map((chord, idx) => {
                 let style = {
@@ -535,6 +499,7 @@ let App = React.createClass({
                 let locked = false;
                 let hovering = false;
                 let inactive = false;
+
                 if (chordInputs.size > 0) {
                   locked = true;
                   if (idx < this.state.chords.size) {
@@ -549,6 +514,7 @@ let App = React.createClass({
                     inactive = true;
                   }
                 }
+
                 return <ChordCard
                   key={chord.id}
                   locked={locked}
@@ -584,6 +550,8 @@ let App = React.createClass({
               })}
             </SortableGridList>
           </div>
+
+          {bottomBar}
         </div>
 
         <Style.Element />

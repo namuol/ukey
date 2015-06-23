@@ -11,6 +11,7 @@ import HTML5Backend from 'react-dnd/modules/backends/HTML5';
 
 import DraggableItem from './DraggableItem';
 import DropSpot from './DropSpot';
+import isFunc from './isFunc';
 
 function isNumber (o) {
   return typeof o === 'number';
@@ -73,7 +74,7 @@ const target = {
 
     const layout = component.state.layout;
     const newLayout = component.moveItemToCoord({layout, item, coord});
-    if (typeof props.onLayoutChanged === 'function') {
+    if (isFunc(props.onLayoutChanged)) {
       props.onLayoutChanged(newLayout);
     }
     component.setState({

@@ -2,6 +2,7 @@ import 'babel/polyfill';
 
 import React from 'react';
 import App from './App';
+import SongList from './SongList';
 
 import page from 'page';
 
@@ -36,24 +37,23 @@ window.addEventListener('load', () => {
   });
 
   page('/testgrid', (ctx, next) => {
-    let GRID = Style.registerStyle({
-      width: '100%',
-    });
-
     React.render(
       <TestGrid />
     , document.getElementById('main'));
   });
 
   page('/testgrid2', (ctx, next) => {
-    let GRID = Style.registerStyle({
-      width: '100%',
-    });
-
     React.render(
       <TestGrid2 />
     , document.getElementById('main'));
   });
+
+  page('/songs', (ctx, next) => {
+    React.render(
+      <SongList />
+    , document.getElementById('main'));
+  });
+
 
   page.base(process.env.BASEPATH || '');
 

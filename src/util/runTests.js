@@ -1,5 +1,6 @@
 import equal from 'deep-equal';
 import pretty from './pretty';
+import isFunc from '../isFunc';
 
 export default function runTests ({funcName, func, tests}) {
   console.info('Running tests for', funcName);
@@ -9,7 +10,7 @@ export default function runTests ({funcName, func, tests}) {
   tests.forEach(({input, expected}, testNum) => {
     let result = func(input);
     
-    if (!!result && typeof result.toJS === 'function') {
+    if (!!result && isFunc(result.toJS)) {
       result = result.toJS();
     }
 

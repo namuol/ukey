@@ -3,10 +3,11 @@ import {DropTarget} from 'react-dnd';
 import HTML5Backend from 'react-dnd/modules/backends/HTML5';
 
 import gridShift from './gridShift';
+import isFunc from './isFunc';
 
 const target = {
   drop (props, monitor, component) {
-    if (typeof props.onDrop === 'function') {
+    if (isFunc(props.onDrop)) {
       props.onDrop(...arguments);
     }
 
@@ -14,7 +15,7 @@ const target = {
   },
 
   hover (props, monitor, component) {
-    if (typeof props.onHover === 'function') {
+    if (isFunc(props.onHover)) {
       props.onHover(...arguments);
     }
   },
