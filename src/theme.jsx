@@ -16,16 +16,19 @@ const theme = {
 
   topBarHeight: 12,
   bottomBarHeight: 15,
+
+  badgeWidth: 6,
 };
 
 theme.TOP_BAR = Style.registerStyle({
-  fontSize: '4vmin',
+  fontSize: '5vmin',
   display: 'flex',
   flexDirection: 'row',
   justifyContent: 'space-between',
   alignItems: 'center',
   alignContent: 'center',
   width: '100vmin',
+  maxWidth: '100%',
   padding: `${theme.mainPadding}vmin`,
   position: 'fixed',
   backgroundColor: Color(theme.bgColor).alpha(0.925).rgbString(),
@@ -34,18 +37,23 @@ theme.TOP_BAR = Style.registerStyle({
   top: 0,
   textTransform: 'uppercase',
 
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+
   // HACK: Why do I have to do this?
   transform: 'translate3d(0,0,0)',
 });
 
 theme.BOTTOM_BAR = Style.registerStyle({
-  fontSize: '4vmin',
+  fontSize: '5vmin',
   display: 'flex',
   flexDirection: 'row',
   justifyContent: 'space-between',
   alignItems: 'center',
   alignContent: 'center',
   width: '100vmin',
+  maxWidth: '100%',
   padding: `${theme.mainPadding}vmin`,
   position: 'fixed',
   backgroundColor: Color(theme.bgColor).rgbString(),
@@ -60,6 +68,7 @@ theme.BOTTOM_BAR = Style.registerStyle({
 
 theme.WRAPPER = Style.registerStyle({
   width: '100vmin',
+  maxWidth: '100%',
   minHeight: '100vh',
   margin: 'auto',
   backgroundColor: theme.bgColor,
@@ -67,7 +76,7 @@ theme.WRAPPER = Style.registerStyle({
 
 theme.BUTTON = Style.registerStyle({
   fontFamily: theme.fontFamily,
-  fontSize: '5vmin',
+  fontSize: 'inherit',
   border: 'none',
   outline: 'none',
   borderRadius: '1vmin',
@@ -89,6 +98,28 @@ theme.BUTTON = Style.registerStyle({
   alignItems: 'center',
   alignContent: 'center',
   textTransform: 'uppercase',
+  textDecoration: 'none',
+});
+
+theme.BADGE = Style.registerStyle({
+  width: `${theme.badgeWidth}vmin`,
+  height: `${theme.badgeWidth}vmin`,
+  borderRadius: '50%',
+  background: '#e66',
+  color: 'white',
+  position: 'absolute',
+  top: `-${theme.badgeWidth/2 - 1}vmin`,
+  left: `-${theme.badgeWidth/2 - 1}vmin`,
+  textAlign: 'center',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  alignContent: 'center',
+  fontWeight: 700,
+  fontSize: '4vmin',
+  border: '0.7vmin solid white',
+  transition: 'transform 200ms, opacity 200ms, left 200ms, top 200ms',
+  transitionTimingFunction: 'cubic-bezier(0.680, -0.550, 0.265, 1.550)',
 });
 
 export default theme;

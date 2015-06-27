@@ -147,44 +147,17 @@ const NOTE = Style.registerStyle({
   transition: 'all 450ms',
 });
 
-const badgeWidth = 6;
-
-const BADGE_BASE = Style.registerStyle({
-  width: `${badgeWidth}vmin`,
-  height: `${badgeWidth}vmin`,
-  borderRadius: '50%',
-  background: '#e66',
-  color: 'white',
-  position: 'absolute',
-  top: `-${badgeWidth/2 - 1}vmin`,
-  left: `-${badgeWidth/2 - 1}vmin`,
-  textAlign: 'center',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  alignContent: 'center',
-  fontWeight: 700,
-  fontSize: '4vmin',
-  border: '0.7vmin solid white',
-  transition: 'transform 200ms',
-  transitionTimingFunction: 'cubic-bezier(0.680, -0.550, 0.265, 1.550)',
-});
-
-const DELETE_BUTTON = Style.registerStyle(BADGE_BASE.style, {
-  // animationName: APPEAR.name,
-  // animationDuration: '200ms',
+const DELETE_BUTTON = Style.registerStyle(theme.BADGE.style, {
   transform: 'scale(1)',
 });
 
-const DELETE_BUTTON_HIDDEN = Style.registerStyle(BADGE_BASE.style, {
-  // animationName: DISAPPEAR.name,
-  // animationDuration: '200ms',
+const DELETE_BUTTON_HIDDEN = Style.registerStyle(theme.BADGE.style, {
   transform: 'scale(0)',
 });
 
-const VARIATION_BADGE = Style.registerStyle(BADGE_BASE.style, {
+const VARIATION_BADGE = Style.registerStyle(theme.BADGE.style, {
   left: 'initial',
-  right: `-${badgeWidth/2 - 1}vmin`,
+  right: `-${theme.badgeWidth/2 - 1}vmin`,
   background: theme.highlight,
   color: 'white',
   opacity: 1,
