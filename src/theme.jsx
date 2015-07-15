@@ -99,6 +99,7 @@ theme.BUTTON = Style.registerStyle({
   alignContent: 'center',
   textTransform: 'uppercase',
   textDecoration: 'none',
+  transition: 'transform 200ms, opacity 200ms',
 });
 
 theme.BADGE = Style.registerStyle({

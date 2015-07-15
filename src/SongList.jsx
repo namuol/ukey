@@ -139,7 +139,7 @@ class Song extends React.Component {
     const DELETE_BUTTON_className = canDelete ? DELETE_BUTTON.className : DELETE_BUTTON_HIDDEN.className;
 
     return (
-      <div className={SONG_className} onClick={!deleted && this.props.onClick}>
+      <div className={SONG_className} style={this.props.style} onClick={!deleted && this.props.onClick}>
         <div className={DELETE_BUTTON_className} onClick={(e) => {
           if (!canDelete) {
             return;
@@ -223,6 +223,13 @@ const NEW_BUTTON = Style.registerStyle(theme.BUTTON.style, {
   fontWeight: 700,
 });
 
+const NO_SONGS = Style.registerStyle({
+  height: `100%`,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
 function getDefaultSongTitle (existingSongs) {
   const matcher = /Untitled Song #(\d+)/gi;
 
@@ -259,22 +266,26 @@ class SongList extends React.Component {
       animateNewlyMountedSongs,
     } = this.state;
 
+    const newButtonDisabled = songIsNew || (songs.size === 0);
+
     return (
       <div className={STYLE.className}>
         <div className={theme.TOP_BAR.className}>
           <div>
             <div className={NEW_BUTTON.className}
-              onClick={() => {
+              onClick={!newButtonDisabled && (() => {
                 this.setState({
                   editing: !editing,
                   songBeingEdited: null,
                 });
-              }}
+              })}
               style={{
-                fontWeight: editing ? 700 : 400,
+                fontWeight: editing || newButtonDisabled ? 700 : 400,
+                // visibility: songIsNew || (songs.size === 0) ? 'hidden' : 'visible',
+                opacity: newButtonDisabled ? 0 : 1,
               }}
             >
-              {editing ? 'Done' : 'Edit'}
+              {editing || newButtonDisabled ? 'Done' : 'Edit'}
             </div>
           </div>
 
@@ -295,15 +306,19 @@ class SongList extends React.Component {
               });
             }}
             style={{
-              visibility: editing ? 'hidden' : 'visible',
+              // visibility: editing || songIsNew ? 'hidden' : 'visible',
+              opacity: editing || songIsNew ? 0 : 1,
             }}
           >
-            New
+            New Song
           </div>
         </div>
         
         <div className={SONG_LIST.className}>
-          {songs.reverse().map((song, reverseIDX) => {
+          {songs.size === 0 ? 
+            <div className={NO_SONGS.className}>No Songs</div>
+          :
+          songs.reverse().map((song, reverseIDX) => {
             const songID = song.get('id');
             const idx = songs.size - reverseIDX - 1;
 
@@ -312,6 +327,9 @@ class SongList extends React.Component {
               animate={animateNewlyMountedSongs}
               editing={songBeingEdited === songID}
               canDelete={editing}
+              style={{
+                opacity: ((editing || songIsNew) && songBeingEdited) ? (songBeingEdited === songID ? 1 : 0.5) : 1,
+              }}
               onClick={
                 editing ? (() => {
                   this.setState({
@@ -326,10 +344,12 @@ class SongList extends React.Component {
                 })
               }
               onDelete={() => {
+                const newSongs = songs.splice(idx, 1);
                 this.setState({
                   songBeingEdited: null,
+                  editing: editing && newSongs.size > 0,
                 });
-                UserData.set('songs', songs.splice(idx, 1));
+                UserData.set('songs', newSongs);
               }}
               onTitleChange={(newTitle) => {
                 this.setState({

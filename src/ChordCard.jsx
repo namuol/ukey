@@ -5,9 +5,14 @@ import theme from './theme';
 import Immutable from 'immutable';
 
 import getFingeringsFromChord from './getFingeringsFromChord';
+import intervalFromSemitoneOffset from './intervalFromSemitoneOffset';
 import createFretboard from './createFretboard';
 
+import transposeChord from './transposeChord';
+
 import isFunc from './isFunc';
+
+import FitText from './FitText';
 
 // let cardWidth = (100 - 2*theme.mainPadding)/6 - 2;
 // let cardHeight = 1.8*cardWidth;
@@ -98,10 +103,15 @@ const WRAPPER_INACTIVE = Style.registerStyle(WRAPPER.style, {
 });
 
 const LABEL = Style.registerStyle({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  alignContent: 'center',
   fontSize: '3.5vmin',
   fontWeight: 700,
   color: 'black',
   width: '100%',
+  height: '100%',
   textAlign: 'center',
   margin: 0,
 });
@@ -179,7 +189,7 @@ const ChordCard = React.createClass({
     return {
       chord: 'C',
       fretboard: fretboard,
-      fretWindow: 5,
+      fretWindow: 8,
       transpose: 0,
     };
   },
@@ -303,6 +313,7 @@ const ChordCard = React.createClass({
       fretWindow,
       fretboard,
       transpose,
+      chord,
     } = this.props;
 
     let {
@@ -315,9 +326,14 @@ const ChordCard = React.createClass({
     let style = {};
 
     try {
-      chordName = teoria.chord(this.props.chord).name;
+
+      chordName = transposeChord({
+        chord,
+        semitones: transpose,
+      }).name;
+
       variations = getFingeringsFromChord({
-        chord: chordName,
+        chord: teoria.chord(chord).name,
         fretboard,
         fretWindow,
         transpose,
@@ -326,9 +342,8 @@ const ChordCard = React.createClass({
       fingerings = variations.get(variation);
       cardSVG = this.getCardSVG(fingerings);
     } catch (e) {
-      chordName = this.props.chord + '?';
+      chordName = chord + '?';
       cardSVG = <div className={SVG.className}></div>;
-      // style.backgroundColor = '#faa';
     }
 
     let WRAPPER_className = WRAPPER.className;
@@ -361,9 +376,11 @@ const ChordCard = React.createClass({
     return (
       <div className={WRAPPER_className} style={this.props.style}>
         <div className={STYLE.className} style={style} onClick={this._onClick}>
-          <div className={LABEL.className}>
-            {chordName}
-          </div>
+          <FitText>
+            <div className={LABEL.className}>
+              {chordName}
+            </div>
+          </FitText>
           {cardSVG}
         </div>
 

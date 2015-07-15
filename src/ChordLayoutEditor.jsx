@@ -144,7 +144,7 @@ function processLayout ({layout}) {
   return filteredLayout.push(...empties.toArray());
 }
 
-function getChordInputsFromChordText ({chordInputText, chordInputs=Immutable.List()}) {
+function getChordInputsFromChordText ({chordInputText, chordInputs=Immutable.List(), transposeOffset=0}) {
   let filteredInputText = Immutable.List(chordInputText.split(/\s/).filter(c => c.length > 0));
   
   if (filteredInputText.size === 0) {
@@ -156,6 +156,7 @@ function getChordInputsFromChordText ({chordInputText, chordInputs=Immutable.Lis
     return Immutable.fromJS({
       id: existingChord ? existingChord.get('id') : uuid.v4(),
       text: chord,
+      transposeOffset,
     });
   });
 }
@@ -309,6 +310,7 @@ let ChordLayoutEditor = React.createClass({
   renderTopBar_adding: function ({layout}) {
     const {
       chordInputs,
+      transpose,
     } = this.state;
     
     return (
@@ -352,12 +354,13 @@ let ChordLayoutEditor = React.createClass({
         <input className={CHORD_TEXT_INPUT.className}
           type="text"
           ref="chordInputText"
+          placeholder="Enter Chord Name"
           value={this.state.chordInputText}
           autoFocus={true}
           spellCheck={false}
           onChange={(e) => {
             const chordInputText = e.target.value;
-            const chordInputs = getChordInputsFromChordText({chordInputText, chordInputs: this.state.chordInputs});
+            const chordInputs = getChordInputsFromChordText({chordInputText, chordInputs: this.state.chordInputs, transpose});
 
             this.setState({
               chordInputText: chordInputText,
@@ -423,7 +426,7 @@ let ChordLayoutEditor = React.createClass({
             React.findDOMNode(this.refs.chordInputText).focus();
           });
         }}>
-          Add
+          Add Chords
         </div>
 
         <input type="submit" style={{height: 0, padding: 0, margin: 0, position: 'absolute', visibility: 'hidden'}} />
@@ -573,13 +576,19 @@ let ChordLayoutEditor = React.createClass({
                       });
                     } else {
                       const chordIdx = chords.findIndex(c => c.get('id') === chordID);
+                      
+                      if (chordIdx < 0) {
+                        // TODO: Allow variations while inputting?
+                        return;
+                      }
+
                       const newChord = chord.set('variation', (chord.get('variation') || 0) + 1);
                       const newSong = song.set('chords', chords.set(chordIdx, newChord));
                       onSongChanged(newSong);
                     }
                   }}
                   fretboard={fretboard}
-                  fretWindow={5}
+                  fretWindow={8}
                   transpose={transpose}
                   style={style}
                 />;
