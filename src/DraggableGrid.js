@@ -1,4 +1,5 @@
 import React, {PropTypes} from 'react';
+import {compose} from 'ramda';
 import Style from './Style';
 import theme from './theme';
 
@@ -44,7 +45,7 @@ const target = {
     });
 
     const item = monitor.getItem();
-    
+
     let currentCoord = (component.state.tempLayout || component.state.layout).get(item.childKey);
     if (currentCoord.x === coord.x && currentCoord.y === coord.y) {
       return;
@@ -66,7 +67,7 @@ const target = {
     });
 
     const item = monitor.getItem();
-    
+
     let currentCoord = (component.state.layout).get(item.childKey);
     if (currentCoord.x === coord.x && currentCoord.y === coord.y) {
       return;
@@ -111,9 +112,7 @@ function getDefaultLayout (props) {
   }, Immutable.Map());
 }
 
-@DragDropContext(HTML5Backend)
-@DropTarget('DRAGGABLE_ITEM', target, collect)
-export default class DraggableGrid extends React.Component {
+class DraggableGrid extends React.Component {
   static defaultProps = {
     gridWidth: 6,
     rowHeight: 12,
@@ -160,7 +159,7 @@ export default class DraggableGrid extends React.Component {
     }, Immutable.List(Immutable.Range(0, gridHeight).map(n => Immutable.List(new Array(this.props.gridWidth)))));
 
     // console.log('oldLayout', grid.toJS());
-    
+
     let newLayout = gridShift({grid, coord});
 
     // console.log('newLayout', newLayout.toJS());
@@ -186,7 +185,7 @@ export default class DraggableGrid extends React.Component {
     } = this.state;
 
     const layout = this.state.tempLayout || this.state.layout;
-    
+
     const itemWidth = ({space=spacing}) => {
       return `(${100/gridWidth}% - ${space + space/gridWidth}${unit})`;
     };
@@ -258,3 +257,8 @@ export default class DraggableGrid extends React.Component {
     );
   }
 };
+
+export default compose(
+  DragDropContext(HTML5Backend),
+  DropTarget('DRAGGABLE_ITEM', target, collect)
+)(DraggableGrid);

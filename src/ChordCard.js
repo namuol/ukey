@@ -1,7 +1,8 @@
 import React from 'react/addons';
+import teoria from 'teoria';
+
 import Style from './Style';
 import theme from './theme';
-
 import Immutable from 'immutable';
 
 import getFingeringsFromChord from './getFingeringsFromChord';
@@ -150,7 +151,7 @@ const STRING = Style.registerStyle({
   strokeWidth: 2,
 });
 
-const NOTE = Style.registerStyle({  
+const NOTE = Style.registerStyle({
   fill: theme.color,
   stroke: 'none',
   transform: `translate3d(0, 0, 0)`,
@@ -213,7 +214,7 @@ const ChordCard = React.createClass({
 
   showVariationBadge: function () {
     clearTimeout(this.state.variationBadgeTimeout);
-    
+
     const variationBadgeTimeout = setTimeout(() => {
       this.setState({
         variationBadgeVisible: false,

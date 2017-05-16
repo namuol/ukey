@@ -28,8 +28,7 @@ let collect = (connect, monitor) => {
   };
 };
 
-@DropTarget('DRAGGABLE_ITEM', target, collect)
-export default class DropSpot extends React.Component {
+class DropSpot extends React.Component {
   static propTypes = {
     connectDropTarget: PropTypes.func.isRequired,
     isOver: PropTypes.bool.isRequired,
@@ -60,3 +59,5 @@ export default class DropSpot extends React.Component {
     );
   }
 };
+
+export default DropTarget('DRAGGABLE_ITEM', target, collect)(DropSpot);

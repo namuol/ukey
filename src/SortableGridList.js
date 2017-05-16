@@ -1,4 +1,5 @@
 import React, {PropTypes} from 'react';
+import {compose} from 'ramda';
 
 import invariant from 'react/lib/invariant';
 
@@ -141,7 +142,7 @@ const target = {
   hover (props, monitor, component) {
     const oldLayout = component.getLayout();
     const newLayout = handleDragEvent(...arguments, oldLayout);
-    
+
     if (newLayout && !Immutable.is(oldLayout, newLayout)) {
       // console.log('HOVER:');
       // console.log('oldLayout', oldLayout.toJS());
@@ -220,9 +221,7 @@ function getMaxSectionDisplayHeights (props, layout) {
   }, Immutable.List());
 }
 
-@DragDropContext(HTML5Backend)
-@DropTarget('DRAGGABLE_ITEM', target, collect)
-export default class SortableGridList extends React.Component {
+class SortableGridList extends React.Component {
   static propTypes = {
     layout: PropTypes.object.isRequired,
     onLayoutChanged: PropTypes.func.isRequired,
@@ -270,7 +269,7 @@ export default class SortableGridList extends React.Component {
     const layout = this.getLayout();
 
     // console.log('renderLayout', layout.toJS(), this.props.layout.toJS());
-    
+
     const itemWidth = ({space=spacing}) => {
       return `(${100/gridWidth}% - ${space + space/gridWidth}${unit})`;
     };
@@ -396,3 +395,8 @@ export default class SortableGridList extends React.Component {
     );
   }
 };
+
+export default compose(
+  DragDropContext(HTML5Backend),
+  DropTarget('DRAGGABLE_ITEM', target, collect)
+)(SortableGridList);

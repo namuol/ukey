@@ -29,8 +29,7 @@ const itemSource = {
   }
 };
 
-@DragSource('DRAGGABLE_ITEM', itemSource, collect)
-export default class DraggableItem extends React.Component {
+class DraggableItem extends React.Component {
   static propTypes = {
     connectDragSource: PropTypes.func.isRequired,
     isDragging: PropTypes.bool.isRequired,
@@ -57,3 +56,5 @@ export default class DraggableItem extends React.Component {
     );
   }
 };
+
+export default DragSource('DRAGGABLE_ITEM', itemSource, collect)(DraggableItem);

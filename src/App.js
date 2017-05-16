@@ -18,7 +18,7 @@ class App extends React.Component {
   state = (() => {
     return {
     };
-  }());
+  })();
 
   componentWillMount () {
     this._refreshSongs = () => {
