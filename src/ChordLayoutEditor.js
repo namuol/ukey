@@ -444,7 +444,10 @@ let ChordLayoutEditor = React.createClass({
                 }
               }}
             >
-              <strong>&lt;</strong>&nbsp;&nbsp;Songs
+              <strong style={{
+                marginTop: '-1.3vmin',
+                marginRight: '2.5vmin',
+              }}>&lt;</strong>Songs
             </div>
 
             <div className={SONG_TITLE.className}>
