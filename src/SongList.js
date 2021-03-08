@@ -151,7 +151,7 @@ class Song extends React.Component {
           this.setState({
             deleted: true,
           });
-        }}>⨯</div>
+        }}>X</div>
         {
           editing ?
             <form className={SONG_TITLE.className}

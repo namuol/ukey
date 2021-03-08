@@ -369,7 +369,7 @@ const ChordCard = React.createClass({
           this.setState({
             deleted: true,
           });
-        }}>⨯</div>}
+        }}>X</div>}
 
         {
           <div className={VARIATION_BADGE_className} onClick={this._onClick}>
