@@ -1,22 +1,15 @@
-import React, {PropTypes} from 'react';
+import React from 'react';
 import {compose} from 'ramda';
-import Style from './Style';
-import theme from './theme';
 
 import Immutable from 'immutable';
 
 import gridShift from './gridShift';
 
-import {DragDropContext, DragSource, DropTarget} from 'react-dnd';
+import {DragDropContext, DropTarget} from 'react-dnd';
 import HTML5Backend from 'react-dnd/modules/backends/HTML5';
 
 import DraggableItem from './DraggableItem';
-import DropSpot from './DropSpot';
 import isFunc from './isFunc';
-
-function isNumber (o) {
-  return typeof o === 'number';
-}
 
 function getGridCoordFromClientOffset ({element, clientOffset, gridWidth, gridHeight}) {
   let {left, top, width, height} = element.getBoundingClientRect();
@@ -38,6 +31,7 @@ let idxToGridPosition = ({gridWidth, idx}) => {
 const target = {
   hover (props, monitor, component) {
     let coord = getGridCoordFromClientOffset({
+      // eslint-disable-next-line react/no-deprecated
       element: React.findDOMNode(component.refs.container),
       clientOffset: monitor.getClientOffset(),
       gridWidth: component.props.gridWidth,
@@ -60,6 +54,7 @@ const target = {
 
   drop (props, monitor, component) {
     let coord = getGridCoordFromClientOffset({
+      // eslint-disable-next-line react/no-deprecated
       element: React.findDOMNode(component.refs.container),
       clientOffset: monitor.getClientOffset(),
       gridWidth: component.props.gridWidth,
@@ -180,10 +175,6 @@ class DraggableGrid extends React.Component {
       connectDropTarget,
     } = this.props;
 
-    const {
-      dragging,
-    } = this.state;
-
     const layout = this.state.tempLayout || this.state.layout;
 
     const itemWidth = ({space=spacing}) => {
@@ -216,10 +207,6 @@ class DraggableGrid extends React.Component {
     const gridHeight = getGridHeight(layout);
 
     const totalHeight = gridToScreenPosition({x:0, y:gridHeight+1}).y;
-
-    const children = this.props.children.reduce((result, child) => {
-      return result.set(child.key, child);
-    }, Immutable.Map());
 
     return connectDropTarget(
       <div className={this.props.className}

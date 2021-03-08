@@ -1,4 +1,4 @@
-import React from 'react/addons';
+import React from 'react';
 import teoria from 'teoria';
 
 import Style from './Style';
@@ -6,7 +6,6 @@ import theme from './theme';
 import Immutable from 'immutable';
 
 import getFingeringsFromChord from './getFingeringsFromChord';
-import intervalFromSemitoneOffset from './intervalFromSemitoneOffset';
 import createFretboard from './createFretboard';
 
 import transposeChord from './transposeChord';
@@ -14,27 +13,6 @@ import transposeChord from './transposeChord';
 import isFunc from './isFunc';
 
 import FitText from './FitText';
-
-// let cardWidth = (100 - 2*theme.mainPadding)/6 - 2;
-// let cardHeight = 1.8*cardWidth;
-
-const APPEAR = Style.registerKeyframes({
-  from: {
-    transform: 'scale(0)',
-    // opacity: 0,
-  },
-  to: {
-    transform: 'scale(1)',
-    // opacity: 1,
-  },
-});
-
-const APPEAR_THEN_DISAPPEAR = Style.registerKeyframes({
-  '0%': {transform: 'scale(0)'},
-  '10%': {transform: 'scale(1)'},
-  '90%': {transform: 'scale(1)'},
-  '100%': {transform: 'scale(0)'},
-});
 
 const DISAPPEAR = Style.registerKeyframes({
   from: {
@@ -76,10 +54,6 @@ const WRAPPER = Style.registerStyle({
   perspective: '100vmin',
   // transformOrigin: '50% 50% 0',
   // transform: 'rotateY(60deg)'
-});
-
-const WRAPPER_SELECTED = Style.registerStyle(WRAPPER.style, {
-  border: `1vmin solid ${theme.highlight}`,
 });
 
 const WRAPPER_HOVERING = Style.registerStyle(WRAPPER.style, {
@@ -296,7 +270,7 @@ const ChordCard = React.createClass({
 
     return (
       <svg viewBox={`0 0 100 ${height}`} className={SVG.className}>
-        {React.addons.createFragment({
+        {React.createFragment({
           strings: strings,
           frets: frets,
           notes: notes

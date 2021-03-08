@@ -1,5 +1,4 @@
 import Immutable from 'immutable';
-import teoria from 'teoria';
 import transposeChord from './transposeChord';
 
 import runTests from './util/runTests';

@@ -17,6 +17,7 @@ class FitText extends React.Component {
   };
 
   _fitTheText = () => {
+    // eslint-disable-next-line react/no-deprecated
     textFit(React.findDOMNode(this), {reprocess: false});
   };
   

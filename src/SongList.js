@@ -234,7 +234,7 @@ function getDefaultSongTitle (existingSongs) {
   const matcher = /Untitled Song #(\d+)/gi;
 
   const maxUntitledSongNumber = existingSongs.reduce((result, song) => {
-    const number = parseInt(song.get('title').replace(matcher, '$1')) || 0;
+    const number = parseInt(song.get('title').replace(matcher, '$1'), 10) || 0;
     return Math.max(result, number);
   }, 0);
 

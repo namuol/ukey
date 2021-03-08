@@ -14,6 +14,7 @@ function shift1D ({list, pos, expand}) {
     // There's room to our left, so shift left:
     const rangeToShift = list.slice(leftSpace+1,pos+1).toJS();
     return list.set(pos, null).splice(leftSpace, rangeToShift.length, ...rangeToShift);
+    // eslint-disable-next-line no-cond-assign
   } else if ((rightSpace = list.slice(pos+1,list.size+1).findIndex(isEmpty)) >= 0) {
     rightSpace = pos + rightSpace + 1;
     const rangeToShift = list.slice(pos,rightSpace).toJS();

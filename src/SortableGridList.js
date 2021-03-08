@@ -1,20 +1,14 @@
 import React, {PropTypes} from 'react';
 import {compose} from 'ramda';
 
-import invariant from 'react/lib/invariant';
-
-import Style from './Style';
 import theme from './theme';
 
 import Immutable from 'immutable';
 
-import gridShift from './gridShift';
-
-import {DragDropContext, DragSource, DropTarget} from 'react-dnd';
+import {DragDropContext, DropTarget} from 'react-dnd';
 import HTML5Backend from 'react-dnd/modules/backends/HTML5';
 
 import DraggableItem from './DraggableItem';
-import DropSpot from './DropSpot';
 
 import Color from 'color';
 import clamp from './clamp';
@@ -22,16 +16,12 @@ import isFunc from './isFunc';
 
 const PHI = 1.61803398875;
 
-function isNumber (o) {
-  return typeof o === 'number';
-}
-
 function gridCoordToIdx ({x, y, gridWidth}) {
   return y * gridWidth + clamp(0,x,gridWidth-1);
 }
 
-function getLayoutPositionFromClientOffset ({element, clientOffset, gridWidth, gridHeight, component}) {
-  const {left, top, width, height} = element.getBoundingClientRect();
+function getLayoutPositionFromClientOffset ({element, clientOffset, gridWidth, component}) {
+  const {left, top, width} = element.getBoundingClientRect();
   const {scrollLeft, scrollTop} = document.documentElement;
   const layout = component.getLayout();
 
@@ -53,6 +43,8 @@ function getLayoutPositionFromClientOffset ({element, clientOffset, gridWidth, g
     if (mouseY >= sectionTop && mouseY <= (sectionTop + sectionDisplayHeight)) {
       return [sectionNumber, sectionTop, sectionDisplayHeight];
     }
+
+    return undefined;
   }, false);
 
   const [section, sectionTop, sectionDisplayHeight] = findResult;
@@ -106,10 +98,13 @@ function handleDragEvent (props, monitor, component, oldLayout) {
     if (idx >= 0) {
       return [sectionNumber, idx];
     }
+
+    return undefined;
   }, false);
 
   const {sectionNumber, idx} = getLayoutPositionFromClientOffset({
     component: component,
+    // eslint-disable-next-line react/no-deprecated
     element: React.findDOMNode(component.refs.container),
     clientOffset: monitor.getClientOffset(),
     gridWidth: component.props.gridWidth,
@@ -199,15 +194,16 @@ function getLayoutPosition ({layout, child}) {
 }
 
 function checkProps (props) {
-  const childCount = props.children.size;
-  const layoutCount = props.layout.reduce((sum, section) => {
-    return sum + section.size;
-  }, 0);
+  // FIXME: Find a replacement for invariant from react:
+  // const childCount = props.children.size;
+  // const layoutCount = props.layout.reduce((sum, section) => {
+  //   return sum + section.size;
+  // }, 0);
 
-  invariant(
-    childCount === layoutCount,
-    `Received a list of ${childCount} children, but the \`layout\` prop has ${layoutCount} items.`
-  );
+  // invariant(
+  //   childCount === layoutCount,
+  //   `Received a list of ${childCount} children, but the \`layout\` prop has ${layoutCount} items.`
+  // );
 }
 
 function getMaxSectionDisplayHeights (props, layout) {
@@ -259,12 +255,7 @@ class SortableGridList extends React.Component {
       spacing,
       unit,
       connectDropTarget,
-      vSpacing,
     } = this.props;
-
-    const {
-      dragging,
-    } = this.state;
 
     const layout = this.getLayout();
 
@@ -298,12 +289,6 @@ class SortableGridList extends React.Component {
         transition: 'left 250ms, top 250ms',
       };
     };
-
-    const gridHeight = getTotalHeight({layout, gridWidth});
-
-    const children = this.props.children.reduce((result, child) => {
-      return result.set(child.key, child);
-    }, Immutable.Map());
 
     const sectionDisplayHeights = getMaxSectionDisplayHeights(this.props, layout);
     const sectionTops = getSectionTops({sectionDisplayHeights, ...this.props});

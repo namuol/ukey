@@ -1,8 +1,6 @@
 import React, {PropTypes} from 'react';
 import {DropTarget} from 'react-dnd';
-import HTML5Backend from 'react-dnd/modules/backends/HTML5';
 
-import gridShift from './gridShift';
 import isFunc from './isFunc';
 
 const target = {
@@ -38,9 +36,7 @@ class DropSpot extends React.Component {
 
   render () {
     const {
-      x, y,
       connectDropTarget,
-      isOver
     } = this.props;
 
     return connectDropTarget(

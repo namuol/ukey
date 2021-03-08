@@ -4,19 +4,13 @@ import Immutable from 'immutable';
 import Style from './Style';
 import theme from './theme';
 
-import page from 'page';
-import qs from 'qs';
-
 import createFretboard from './createFretboard';
-import getFingeringsFromChord from './getFingeringsFromChord';
 
 import SortableGridList from './SortableGridList';
 
 import ChordCard from './ChordCard';
 
-import Color from 'color';
 import uuid from 'uuid';
-import clamp from './clamp';
 import mod from './mod';
 import isFunc from './isFunc';
 
@@ -29,15 +23,6 @@ const STYLE = Style.registerStyle({
   height: '100%',
   textAlign: 'left',
   fontSize: '4vmin',
-});
-
-const BRAND_HEADER = Style.registerStyle({
-  margin: 0,
-  fontWeight: 400,
-  marginTop: '-0.7vmin',
-  textTransform: 'lowercase',
-  fontSize: '4vmin',
-  opacity: 0.5,
 });
 
 const CHORD_TEXT_INPUT = Style.registerStyle({
@@ -86,14 +71,6 @@ let BACK_BUTTON = Style.registerStyle(theme.BUTTON.style, {
   marginLeft: 0,
 });
 
-const LABEL = Style.registerStyle({
-  margin: 0,
-  marginBottom: '2vmin',
-  fontSize: '5vmin',
-  fontWeight: 600,
-  color: theme.labelColor,
-});
-
 const CHORD_OUTPUT = Style.registerStyle({
   width: '100%',
   marginTop: `${theme.topBarHeight}vmin`,
@@ -104,22 +81,6 @@ const fretboard = createFretboard({
   tuning: ['G', 'C', 'E', 'A'],
   // tuning: ['D', 'G', 'B', 'E'],
   fretCount: 5,
-});
-
-const ITEM = Style.registerStyle({
-  width: '100%',
-  height: '100%',
-  textAlign: 'center',
-  borderRadius: '2vmin',
-  backgroundColor: 'white',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  fontSize: '4vmin',
-});
-
-const INACTIVE_CARD = Style.registerStyle({
-  opacity: 0.8,
 });
 
 const SONG_TITLE = Style.registerStyle({
@@ -165,12 +126,8 @@ function getChordInputIDs (chordInputs) {
   return chordInputs.map(c => c.get('id'));
 }
 
-function preventDefault (e) {
-  e.preventDefault();
-}
-
 function findLastEmptySection (layout) {
-  return Math.max(0, layout.findLastIndex(section => section.size > 0));;
+  return Math.max(0, layout.findLastIndex(section => section.size > 0));
 }
 
 function addChordsToLayout ({chords, layout, sectionToAddTo=findLastEmptySection(layout)}) {
@@ -220,8 +177,6 @@ let ChordLayoutEditor = React.createClass({
 
   renderTopBar_editing: function () {
     const {
-      chordInputs,
-      editing,
       chordBeingEdited,
     } = this.state;
 
@@ -380,12 +335,6 @@ let ChordLayoutEditor = React.createClass({
   },
 
   renderTopBar_default: function ({layout}) {
-    const {
-      chordInputs,
-      editing,
-      chordBeingEdited,
-    } = this.state;
-
     const song = this.props.song;
     const chords = song.get('chords');
 
@@ -423,6 +372,7 @@ let ChordLayoutEditor = React.createClass({
             chordInputText,
             chordInputs: getChordInputsFromChordText({chordInputText}),
           }, () => {
+            // eslint-disable-next-line react/no-deprecated
             React.findDOMNode(this.refs.chordInputText).focus();
           });
         }}>
@@ -509,7 +459,6 @@ let ChordLayoutEditor = React.createClass({
               spacing={theme.mainPadding}
               layout={layout}
               onLayoutChanged={(layout) => {
-                const chordInputIDs = getChordInputIDs(chordInputs);
                 const newLayout = processLayout({layout});
                 const newSong = song.set('layout', newLayout);
                 onSongChanged(newSong);
@@ -572,6 +521,7 @@ let ChordLayoutEditor = React.createClass({
                         chordBeingEdited: chordID,
                         chordInputText: chordText,
                       }, () => {
+                        // eslint-disable-next-line react/no-deprecated
                         React.findDOMNode(this.refs.chordInputText).focus();
                       });
                     } else {

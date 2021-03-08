@@ -144,16 +144,6 @@ function flexbox (properties) {
   return properties;
 }
 
-function prefixStyles (styles) {
-  if (true || typeof window === "undefined") {
-    return styles;
-  }
-  return Object.keys(styles).reduce((previous, current) => {
-    previous[current] = flexbox(prefixStyle(styles[current]));
-    return previous;
-  }, {});
-}
-
 export default (style) => {
   return flexbox(prefixStyle(style));
 };

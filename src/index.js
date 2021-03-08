@@ -4,13 +4,8 @@ import SongList from './SongList';
 
 import page from 'page';
 
-import qs from 'qs';
-
 import teoria from 'teoria';
 window.teoria = teoria;
-
-import createFretboard from './createFretboard';
-import getFingeringsFromChord from './getFingeringsFromChord';
 
 import Style from './Style';
 Style.inject();
@@ -29,24 +24,28 @@ import TestGrid2 from './TestGrid2';
 
 window.addEventListener('load', () => {
   page('/', (ctx, next) => {
+    // eslint-disable-next-line react/no-deprecated
     React.render(
       <App />
     , document.getElementById('main'));
   });
 
   page('/testgrid', (ctx, next) => {
+    // eslint-disable-next-line react/no-deprecated
     React.render(
       <TestGrid />
     , document.getElementById('main'));
   });
 
   page('/testgrid2', (ctx, next) => {
+    // eslint-disable-next-line react/no-deprecated
     React.render(
       <TestGrid2 />
     , document.getElementById('main'));
   });
 
   page('/songs', (ctx, next) => {
+    // eslint-disable-next-line react/no-deprecated
     React.render(
       <SongList />
     , document.getElementById('main'));

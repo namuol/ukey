@@ -9,10 +9,6 @@ import ChordLayoutEditor from './ChordLayoutEditor';
 
 import UserData from './UserData';
 
-function serializeLayout (layout) {
-  return layout;
-}
-
 class App extends React.Component {
 
   state = (() => {
