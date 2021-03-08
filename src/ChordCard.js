@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react/addons';
 import teoria from 'teoria';
 
 import Style from './Style';
@@ -270,7 +270,7 @@ const ChordCard = React.createClass({
 
     return (
       <svg viewBox={`0 0 100 ${height}`} className={SVG.className}>
-        {React.createFragment({
+        {React.addons.createFragment({
           strings: strings,
           frets: frets,
           notes: notes
@@ -317,6 +317,7 @@ const ChordCard = React.createClass({
       fingerings = variations.get(variation);
       cardSVG = this.getCardSVG(fingerings);
     } catch (e) {
+      console.error(e);
       chordName = chord + '?';
       cardSVG = <div className={SVG.className}></div>;
     }
