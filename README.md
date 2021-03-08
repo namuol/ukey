@@ -1,3 +1,3 @@
-# ooky
+# ukey
 
-Ukulele chord reference web app.
+Simple Ukulele chord reference web app.
